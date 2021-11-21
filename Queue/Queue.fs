@@ -21,6 +21,13 @@ module Queue =
             | ValueSome (x,state) -> loop (add x q) state
         loop empty state
 
+    let repeat count x =
+        unfold (fun counter ->
+            if   counter < count
+            then ValueSome (x,counter+1)
+            else ValueNone
+        ) 0
+
     let addMany xs queue =
         Seq.fold (fun q x -> add x q) queue xs
 
@@ -57,6 +64,11 @@ module Queue =
         else empty
 
     // Low-Level & Basic Implementations
+    let isEmpty (Queue (xs,ys,_)) =
+        xs = [] && ys = []
+
+    let length (Queue (_,_,l)) = l
+
     let head q =
         match q with
         | Queue([],[],_) -> ValueNone
@@ -125,10 +137,8 @@ module Queue =
         fold folder empty queue
 
     // Utilities
-    let isEmpty (Queue (xs,ys,_)) =
-        xs = [] && ys = []
-
-    let length (Queue (_,_,l)) = l
+    let lastIndex queue =
+        length queue - 1
 
     let last (Queue (r,a,_)) =
         match r,a with
@@ -145,9 +155,18 @@ module Queue =
         ) (0,state) queue
         |> snd
 
-    let collect f queue = bind f queue
+    let mapFilter mapper predicate queue =
+        fold (fun q x ->
+            let x = mapper x
+            if predicate x then add x q else q
+        ) empty queue
 
-    let concat queues = collect id queues
+    let filterMap predicate mapper queue =
+        fold (fun q x ->
+            if predicate x then add (mapper x) q else q
+        ) empty queue
+
+    let concat queues = bind id queues
 
     let map2 f queue1 queue2 =
         apply (map f queue1) queue2
@@ -177,6 +196,13 @@ module Queue =
         lift3 f queue1 queue2 queue3 |> bind (fun f ->
         queue4 |> bind (fun x ->
             one (f x)))
+
+    let partition predicate queue =
+        fold (fun (ts,fs) x ->
+            if   predicate x
+            then add x ts,       fs
+            else       ts, add x fs
+        ) (empty,empty) queue
 
     let compareWith comparer queue1 queue2 =
         let rec loop queue1 queue2 =
@@ -280,7 +306,24 @@ module Queue =
         loop queue
 
     let slice start stop queue =
-        take (stop-start+1) (skip start queue)
+        let lidx  = lastIndex queue
+        let start = if start < 0   then 0    else start
+        let stop  = if stop > lidx then lidx else stop
+
+        if   start > stop
+        then empty
+        else take (stop-start+1) (skip start queue)
+
+    let sliceGrow zeroElement start stop queue =
+        let start = if start < 0 then 0 else start
+        let lidx  = lastIndex queue
+
+        if   stop <  start then empty
+        elif stop <= lidx  then slice start stop queue
+        else
+            let s = slice start lidx queue
+            let r = repeat ((stop-start+1)-(length s)) zeroElement
+            append s r
 
     let insertAt index value queue =
         let rec loop index queue newQ =
@@ -289,7 +332,7 @@ module Queue =
             | 0,   ValueSome (x,t) -> loop -1 t (add x (add value newQ))
             | idx, ValueNone       -> newQ
             | idx, ValueSome (x,t) -> loop (idx-1) t (add x newQ)
-        if   index < 0
+        if   index < 0 || index >= lastIndex queue
         then queue
         else loop index queue empty
 
@@ -298,7 +341,7 @@ module Queue =
             match index, head queue with
             | (idx,ValueNone) when idx < 0 -> newQ
             | 0,   ValueNone               -> add value newQ
-            | 0,   ValueSome (x,t)         -> loop -1      t     (add x (add value newQ))
+            | 0,   ValueSome (x,t)         -> loop -1      t     (add x           (add value newQ))
             | idx, ValueNone               -> loop (idx-1) empty (add zeroElement newQ)
             | idx, ValueSome (x,t)         -> loop (idx-1) t     (add x           newQ)
         if   index < 0
@@ -310,7 +353,7 @@ module Queue =
             if   index = idx
             then add value q
             else add x     q
-        if   index < 0
+        if   index < 0 || index >= (length queue - 1)
         then queue
         else foldi folder empty queue
 
@@ -356,18 +399,14 @@ module Queue =
         fold2 (fun q (x,y) z -> add (x,y,z) q) empty (zip queue1 queue2) queue3
 
     let equal queue1 queue2 =
-        let mutable equal = true
         let rec loop queue1 queue2 =
             match head queue1, head queue2 with
-            | ValueNone,        ValueNone        -> ()
-            | ValueNone,        ValueSome _      -> equal <- false
-            | ValueSome _,      ValueNone        -> equal <- false
-            | ValueSome (x,q1), ValueSome (y,q2) ->
-                if   x = y
-                then loop q1 q2
-                else equal <- false
-        loop queue1 queue2
-        equal
+            | ValueNone,        ValueNone        -> true
+            | ValueSome (x,q1), ValueSome (y,q2) -> if x=y then loop q1 q2 else false
+            | _                                  -> failwith "Not Possible"
+        if   length queue1 = length queue2
+        then loop queue1 queue2
+        else false
 
     let reduce reducer queue =
         let folder state x =
@@ -390,7 +429,7 @@ module Queue =
                     false
         loop queue
 
-    let exists predicate queue =
+    let any predicate queue =
         let rec loop q =
             match head q with
             | ValueNone       -> false
@@ -460,6 +499,11 @@ module Queue =
             else alreadyFound
         ) ValueNone queue
 
+    // Mappings
+    let replicate = repeat
+    let collect   = bind
+    let exists    = any
+
     // Side-Effects
     let rec iter f queue =
         match head queue with
@@ -472,6 +516,8 @@ module Queue =
             | ValueNone       -> ()
             | ValueSome (x,t) -> f idx x; loop (idx+1) t
         loop 0 queue
+
+    let id = 3
 
     // Converter
     let ofArray xs =

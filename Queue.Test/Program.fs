@@ -1,4 +1,5 @@
 open Queue
+open Expecto
 
 let que = Queue.ofSeq
 
@@ -97,8 +98,8 @@ printfn "Reduce: %A" (Queue.reduce (+) (que [1..5]))
 printfn "forall StartWithA: %b" (que ["ABC"; "AGG"] |>  Queue.forall (fun s -> s.StartsWith "A"))
 printfn "forall StartWithA: %b" (que ["ABC"; "BGG"] |>  Queue.forall (fun s -> s.StartsWith "A"))
 
-printfn "exists isEven: %b" (Queue.exists isEven (que [1;3;4]))
-printfn "exists isEven: %b" (Queue.exists isEven (que [1;3;5]))
+printfn "any isEven: %b" (Queue.any isEven (que [1;3;4]))
+printfn "any isEven: %b" (Queue.any isEven (que [1;3;5]))
 
 printfn "Sum Float: %f" (Queue.sum (que [1.0; 1.5; 3.2]))
 printfn "Sum Int:   %d" (Queue.sum (que [1; 2; 3]))
@@ -206,3 +207,21 @@ printfn "compare [2] [1]:         %d" (Queue.compareWith isGreater (Queue.one 2)
 printfn "compare [2;1] [1;2]:     %d" (Queue.compareWith isGreater (que [2;1]) (que [1;2]))
 printfn "compare [1;2;3] [1;2;4]: %d" (Queue.compareWith isGreater (que [1;2;3]) (que [1;2;4]))
 
+let add1 x = x + 1
+printfn "MapFilter add1 isEven: [1..10]: %O" (Queue.mapFilter add1 isEven (Queue.range 1 10))
+printfn "FilterMap isEven add1: [1..10]: %O" (Queue.filterMap isEven add1 (Queue.range 1 10))
+printfn "sliceGrow 0  7 12 [1..10]: %O" (Queue.sliceGrow 0  7 12 (Queue.range 1 10))
+printfn "sliceGrow 0  9 10 [1..10]: %O" (Queue.sliceGrow 0  9 10 (Queue.range 1 10))
+printfn "sliceGrow 0 10 10 [1..10]: %O" (Queue.sliceGrow 0 10 10 (Queue.range 1 10))
+printfn "sliceGrow 0 -5  5 [1..10]: %O" (Queue.sliceGrow 0 -5  5 (Queue.range 1 10))
+printfn "sliceGrow 0  5  5 [1..10]: %O" (Queue.sliceGrow 0  5  5 (Queue.range 1 10))
+printfn "sliceGrow 0 11 13 [1..10]: %O" (Queue.sliceGrow 0 11 13 (Queue.range 1 10))
+printfn "sliceGrow 0 -5 14 [1..10]: %O" (Queue.sliceGrow 0 -5 14 (Queue.range 1 10))
+printfn "sliceGrow 0 20 10 [1..10]: %O" (Queue.sliceGrow 0 20 10 (Queue.range 1 10))
+printfn "sliceGrow 0  5 0  [1..10]: %O" (Queue.sliceGrow 0  5  0 (Queue.range 1 10))
+printfn "repeat  0  0: %O" (Queue.repeat  0 0)
+printfn "repeat  1  0: %O" (Queue.repeat  1 0)
+printfn "repeat -5  0: %O" (Queue.repeat -5 0)
+printfn "repeat 10 10: %O" (Queue.repeat 10 0)
+
+printfn "evens|unevens: %O" (Queue.partition isEven (Queue.range 1 10))
