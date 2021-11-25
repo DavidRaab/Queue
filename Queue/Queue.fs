@@ -1,7 +1,60 @@
 namespace Queue
 
-[<NoEquality;NoComparison>]
-type Queue<'a> = Queue of queue:list<'a> * added:list<'a> * length:int
+open System.Collections.Generic
+
+[<CustomEquality;NoComparison>]
+type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
+    Queue of queue:list<'a> * added:list<'a> * length:int
+
+    with
+    member this.Length =
+        let (Queue (_,_,length)) = this
+        length
+
+    member this.Head () =
+        match this with
+        | Queue([],[],_) -> ValueNone
+        | Queue([],r,l)  ->
+            let newQ = List.rev r
+            ValueSome (List.head newQ, Queue((List.tail newQ),[],(l-1)))
+        | Queue(q,a,l)   ->
+            ValueSome (List.head q,    Queue((List.tail q),a,(l-1)))
+
+    override this.Equals obj =
+        match obj with
+        | :? Queue<'a> as other ->
+            let rec loop (queue1:Queue<'a>) (queue2:Queue<'a>) =
+                match queue1.Head(), queue2.Head() with
+                | ValueNone,        ValueNone        -> true
+                | ValueSome (x,q1), ValueSome (y,q2) -> if Unchecked.equals x y then loop q1 q2 else false
+                | _                                  -> failwith "Not Possible"
+            if   this.Length = other.Length
+            then loop this other
+            else false
+        | _ ->
+            false
+
+    override this.GetHashCode () = Unchecked.hash this
+
+    member private this.asSequence () =
+        let s = seq {
+            let mutable queue  = this
+            let mutable notEnd = true
+            while notEnd do
+                match queue.Head () with
+                | ValueNone       -> notEnd <- false
+                | ValueSome (h,t) ->
+                    queue <- t
+                    yield h
+        }
+        s.GetEnumerator()
+
+    interface IEnumerable<'a> with
+        override this.GetEnumerator(): IEnumerator<'a> =
+            this.asSequence ()
+
+        override this.GetEnumerator(): System.Collections.IEnumerator =
+            this.asSequence ()
 
 module Queue =
     // Creation of Queue
@@ -67,19 +120,19 @@ module Queue =
     let isEmpty (Queue (xs,ys,_)) =
         xs = [] && ys = []
 
-    let length (Queue (_,_,l)) = l
+    let length (q:Queue<'a>) =
+        q.Length
 
-    let head q =
-        match q with
-        | Queue([],[],_) -> ValueNone
-        | Queue([],r,l)  ->
-            let newQ = List.rev r
-            ValueSome (List.head newQ, queue (List.tail newQ) [] (l-1))
-        | Queue(q,a,l)   ->
-            ValueSome (List.head q,    queue (List.tail q)    a  (l-1))
+    let head (q:Queue<'a>) =
+        q.Head()
+
+    let equal (q1:Queue<'a>) (q2:Queue<'a>) =
+        q1.Equals(q2)
 
     let tail queue =
-        ValueOption.map snd (head queue)
+        match head queue with
+        | ValueNone       -> empty
+        | ValueSome (h,t) -> t
 
     let fold f (state:'State) queue =
         let rec loop state queue =
@@ -145,6 +198,38 @@ module Queue =
         | [],[]      -> ValueNone
         | r ,[]      -> ValueSome (List.last r)
         | _ ,last::a -> ValueSome last
+
+    let max queue =
+        let folder state x =
+            match state with
+            | ValueNone   -> ValueSome x
+            | ValueSome y -> ValueSome (max x y)
+        fold folder ValueNone queue
+
+    let maxBy projection queue =
+        let folder state item =
+            match state with
+            | ValueNone                 -> ValueSome (projection item, item)
+            | ValueSome (max,_) as orig ->
+                let itemMax = projection item
+                if itemMax > max then ValueSome (itemMax,item) else orig
+        ValueOption.map snd (fold folder ValueNone queue)
+
+    let min queue =
+        let folder state x =
+            match state with
+            | ValueNone   -> ValueSome x
+            | ValueSome y -> ValueSome (min x y)
+        fold folder ValueNone queue
+
+    let minBy projection queue =
+        let folder state item =
+            match state with
+            | ValueNone                 -> ValueSome (projection item, item)
+            | ValueSome (min,_) as orig ->
+                let itemMin = projection item
+                if itemMin < min then ValueSome (itemMin,item) else orig
+        ValueOption.map snd (fold folder ValueNone queue)
 
     let rev queue =
         foldBack add queue empty
@@ -276,9 +361,9 @@ module Queue =
     let skip amount queue =
         let rec loop amount q =
             if amount > 0 then
-                match tail q with
-                | ValueNone   -> empty
-                | ValueSome t -> loop (amount-1) t
+                match head q with
+                | ValueNone       -> empty
+                | ValueSome (_,t) -> loop (amount-1) t
             else
                 q
         if   amount <= 0
@@ -397,16 +482,6 @@ module Queue =
 
     let zip3 queue1 queue2 queue3 =
         fold2 (fun q (x,y) z -> add (x,y,z) q) empty (zip queue1 queue2) queue3
-
-    let equal queue1 queue2 =
-        let rec loop queue1 queue2 =
-            match head queue1, head queue2 with
-            | ValueNone,        ValueNone        -> true
-            | ValueSome (x,q1), ValueSome (y,q2) -> if x=y then loop q1 q2 else false
-            | _                                  -> failwith "Not Possible"
-        if   length queue1 = length queue2
-        then loop queue1 queue2
-        else false
 
     let reduce reducer queue =
         let folder state x =

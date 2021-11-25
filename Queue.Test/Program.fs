@@ -1,65 +1,88 @@
 open Queue
 open Expecto
 
+// Test Setup
+let tests = ResizeArray()
+module Test =
+    let equal actual expected msg =
+        tests.Add (test msg {
+            Expect.equal actual expected ""
+        })
+
+    let notEqual actual expected msg =
+        tests.Add (test msg {
+            Expect.notEqual actual expected ""
+        })
+
+    let ok bool msg =
+        tests.Add (test msg {
+            Expect.isTrue bool ""
+        })
+
+    let notOk bool msg =
+        tests.Add (test msg {
+            Expect.isFalse bool msg
+        })
+
+
+// Utility functions
 let que = Queue.ofSeq
 
-let qs =
-    Queue.empty
-    |> Queue.add 1
-    |> Queue.add 2
-    |> Queue.add 3
+// Actual Tests
+let q123 = Queue.empty |> Queue.add 1 |> Queue.add 2 |> Queue.add 3
+let r123 = Queue.range 1 3
+Test.equal q123 r123 "Queue [1;2;3]"
 
-printfn "add 1,2,3 -> %A" qs
+let r123' = Queue.append (que [10]) (Queue.range 1 3) |> Queue.tail
+Test.equal r123 r123' ""
 
-let qs2 =
-    Queue.tail qs
-    |> ValueOption.defaultValue Queue.empty
-    |> Queue.add 4
-    |> Queue.add 5
-    |> Queue.add 6
+Test.equal    (Queue.range 1 10) (Queue.range 1 10) "Two equal Queues"
+Test.notEqual (Queue.range 1 5)  (Queue.range 1 10) "None equal Queues"
 
-printfn "[2;3];[6;5;4] -> %A" qs2
+Test.equal    [1..10] [for x in Queue.range 1 10 -> x] "Test equal for Expression"
+Test.notEqual [1..10] [for x in Queue.range 1  5 -> x] "Test notEqual for Expression"
 
-printfn "QS2: %A" qs2
+let add1   x = x + 1
+let double x = x * 2
+let isEven x = x % 2 = 0
 
-printfn "qs2 contains 1: %b" (Queue.contains 1 qs2)
-printfn "qs2 contains 6: %b" (Queue.contains 6 qs2)
+let q1to6 = Queue.range 1 6
 
-printfn "qs2 toList: %A" (Queue.toList qs2)
-printfn "double qs2: %A" (Queue.map (fun x -> x*2) qs2)
-printfn "evens qs2:  %A" (Queue.filter (fun x -> x%2 = 0) qs2)
+Test.ok    (Queue.contains  1 q1to6)   "Queue Contains 1"
+Test.notOk (Queue.contains 10 q1to6)   "Queue not Contains 10"
+Test.equal (Queue.map double q1to6)    (que [2;4;6;8;10;12]) "Queue.map"
+Test.equal (Queue.filter isEven q1to6) (que [2;4;6])         "Queue.filter"
 
-let t1 =
+let intern =
     Queue.ofList [1;2;3]
-    |> Queue.tail |> ValueOption.defaultValue Queue.empty
+    |> Queue.tail
     |> Queue.add 4
     |> Queue.add 5
-    |> Queue.tail |> ValueOption.defaultValue Queue.empty
-    |> Queue.add 6
-    |> Queue.add 7
-    |> Queue.tail |> ValueOption.defaultValue Queue.empty
+    |> Queue.tail
+    |> Queue.addMany [6;7]
+    |> Queue.tail
     |> Queue.add 8
     |> Queue.add 9
     |> Queue.head
+Test.equal intern (ValueSome (4,que [5;6;7;8;9])) "Queue.head"
 
-printfn "Should be: (4,[5;6;7;8;9]) = %O" t1
+let q13 = Queue.range 1 3
 
-printfn "Seq   QS2: %A" (Queue.toSeq   qs2)
-printfn "Array QS2: %A" (Queue.toArray qs2)
-printfn "List  QS2: %A" (Queue.toList  qs2)
+Test.equal (Queue.toSeq   q1to6 |> Seq.toList) [1;2;3;4;5;6] "Queue.toSeq"
+Test.equal (List.ofSeq    q1to6) [1;2;3;4;5;6]     "List.ofSeq"
+Test.equal (Queue.toArray q1to6) [|1;2;3;4;5;6|]   "Queue.toArray"
+Test.equal (Queue.toList  q1to6) [1;2;3;4;5;6]     "Queue.toList 2"
+Test.equal (Queue.ofSeq   (seq [1;2;3])) q13 "Queue.ofSeq"
+Test.equal (Queue.ofArray [|1;2;3|])     q13 "Queue.ofArray"
+Test.equal (Queue.ofList [1;2;3])        q13 "Queue.ofList"
+Test.equal (Queue.take -3 q13) Queue.empty   "Queue.take -3"
+Test.equal (Queue.take  2 q13) (que [1;2])   "Queue.take 2"
+Test.equal (Queue.take  5 q13) q13           "Queue.take 5"
+Test.equal (Queue.skip -3 q13) q13           "Queue.skip -3"
+Test.equal (Queue.skip  2 q13) (que [3])     "Queue.skip 2"
+Test.equal (Queue.skip  5 q13) (Queue.empty) "Queue.skip 5"
 
-printfn "Seq    1,2,3 = %A" (Queue.ofSeq (seq [1;2;3]))
-printfn "Array  1,2,3 = %A" (Queue.ofArray [|1;2;3|])
-printfn "List   1,2,3 = %A" (Queue.ofList  [1;2;3])
-
-printfn "Take -3 from 1,2,3: %O" (Queue.take -3 (Queue.range 1 3))
-printfn "Take  2 from 1,2,3: %O" (Queue.take  2 (Queue.range 1 3))
-printfn "Take  5 from 1,2,3: %O" (Queue.take  5 (Queue.range 1 3))
-
-printfn "Skip -3 from 1,2,3: %O" (Queue.skip -3 (Queue.range 1 3))
-printfn "Skip  2 from 1,2,3: %O" (Queue.skip  2 (Queue.range 1 3))
-printfn "Skip  5 from 1,2,3: %O" (Queue.skip  5 (Queue.range 1 3))
-
+(*
 printfn "updateAt: 3 10 [1..10]      %O" (Queue.updateAt 3 10   (Queue.ofSeq [1..10]))
 printfn "updateAt: 100 10 [1..10]    %O" (Queue.updateAt 100 10 (Queue.range 1 10))
 
@@ -223,5 +246,15 @@ printfn "repeat  0  0: %O" (Queue.repeat  0 0)
 printfn "repeat  1  0: %O" (Queue.repeat  1 0)
 printfn "repeat -5  0: %O" (Queue.repeat -5 0)
 printfn "repeat 10 10: %O" (Queue.repeat 10 0)
-
 printfn "evens|unevens: %O" (Queue.partition isEven (Queue.range 1 10))
+printfn "min [1;10;3]: %O" (Queue.min (que [1;10;3]))
+printfn "max [1;10;3]: %O" (Queue.max (que [1;10;3]))
+printfn "minBy String.length [\"Hallo\";\"Welt\"]: %O" (Queue.minBy String.length (que ["Hallo";"Welt"]))
+printfn "maxBy String.length [\"Hallo\";\"Welt\"]: %O" (Queue.maxBy String.length (que ["Hallo";"Welt"]))
+
+*)
+
+
+// Run Tests
+let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
+runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
