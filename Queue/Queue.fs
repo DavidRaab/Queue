@@ -1,7 +1,5 @@
 namespace Queue
 
-open System.Collections.Generic
-
 [<CustomEquality;NoComparison>]
 type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
     Queue of queue:list<'a> * added:list<'a> * length:int
@@ -49,8 +47,8 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
         }
         s.GetEnumerator()
 
-    interface IEnumerable<'a> with
-        override this.GetEnumerator(): IEnumerator<'a> =
+    interface System.Collections.Generic.IEnumerable<'a> with
+        override this.GetEnumerator(): System.Collections.Generic.IEnumerator<'a> =
             this.asSequence ()
 
         override this.GetEnumerator(): System.Collections.IEnumerator =

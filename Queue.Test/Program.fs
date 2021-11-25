@@ -24,9 +24,13 @@ module Test =
             Expect.isFalse bool msg
         })
 
-
 // Utility functions
 let que = Queue.ofSeq
+
+let add1   x = x + 1
+let double x = x * 2
+let isEven x = x % 2 = 0
+let square x = x * x
 
 // Actual Tests
 let q123 = Queue.empty |> Queue.add 1 |> Queue.add 2 |> Queue.add 3
@@ -39,15 +43,12 @@ Test.equal r123 r123' ""
 Test.equal    (Queue.range 1 10) (Queue.range 1 10) "Two equal Queues"
 Test.notEqual (Queue.range 1 5)  (Queue.range 1 10) "None equal Queues"
 
-Test.equal    [1..10] [for x in Queue.range 1 10 -> x] "Test equal for Expression"
+let q1t = Queue.range 1 10
+Test.equal    [1..10] [for x in q1t -> x] "Test for Expression 1"
+Test.equal    [1..10] [for x in q1t -> x] "Test for Expression 2"
 Test.notEqual [1..10] [for x in Queue.range 1  5 -> x] "Test notEqual for Expression"
 
-let add1   x = x + 1
-let double x = x * 2
-let isEven x = x % 2 = 0
-
 let q1to6 = Queue.range 1 6
-
 Test.ok    (Queue.contains  1 q1to6)   "Queue Contains 1"
 Test.notOk (Queue.contains 10 q1to6)   "Queue not Contains 10"
 Test.equal (Queue.map double q1to6)    (que [2;4;6;8;10;12]) "Queue.map"
@@ -81,86 +82,224 @@ Test.equal (Queue.take  5 q13) q13           "Queue.take 5"
 Test.equal (Queue.skip -3 q13) q13           "Queue.skip -3"
 Test.equal (Queue.skip  2 q13) (que [3])     "Queue.skip 2"
 Test.equal (Queue.skip  5 q13) (Queue.empty) "Queue.skip 5"
+Test.equal (Queue.updateAt 3 10   (Queue.ofSeq [1..10])) (que [1;2;3;10;5;6;7;8;9;10]) "Queue.updateAt 3 10"
+Test.equal (Queue.updateAt 100 10 (Queue.range 1 10))    (Queue.range 1 10)            "Queue.updateAt 100 10"
+Test.equal (Queue.updateAt -5 10  (Queue.range 1 10))    (Queue.range 1 10)            "Queue.updateAt -5 10"
 
-(*
-printfn "updateAt: 3 10 [1..10]      %O" (Queue.updateAt 3 10   (Queue.ofSeq [1..10]))
-printfn "updateAt: 100 10 [1..10]    %O" (Queue.updateAt 100 10 (Queue.range 1 10))
+Test.equal
+    (Queue.mapi (fun i x -> (i,x)) (Queue.range 1 10))
+    (Queue.indexed (Queue.range 1 10))
+    "Queue.mapi"
 
-printfn "mapi:    (idx,x)            %O" (Queue.mapi (fun i x -> (i,x)) (Queue.ofSeq [1..10]))
-printfn "append:  [1..3] [4..6]:     %O" (Queue.append (Queue.ofSeq [1..3]) (Queue.ofSeq [4..6]))
-printfn "map2:    [1;2;3] + [10;11;12;13;14;15]: %O" (Queue.map2 (fun x y -> x + y) (Queue.ofSeq [1..3]) (Queue.ofSeq [10..15]))
-printfn "map4:    [1;2] + [10;11] + [5;5;4;12] + [9;9;9]: %O"
+Test.equal
+    (Queue.append (Queue.ofSeq [1..3]) (Queue.ofSeq [4..6]))
+    (Queue.range 1 6)
+    "Queue.append"
+
+Test.equal
+    (Queue.map2 (fun x y -> x + y) (Queue.ofSeq [1..3]) (Queue.ofSeq [10..15]))
+    (que [11;13;15])
+    "Queue.map2"
+
+Test.equal
     (Queue.map4 (fun a b c d -> a + b + c + d) (que [1;2]) (que [10;11]) (que [5;5;4;12]) (que [9;9;9]))
+    (que [25;27])
+    "Queue.map4"
 
-let toListv =
+let cartesian =
     que [1..5]  |> Queue.bind (fun x ->
     que [10;20] |> Queue.bind (fun y ->
         que [x * y]))
-printfn "[1..5] * [10;20]: %A" (Queue.toList toListv)
 
-let flatten = que [Queue.range 1 3; Queue.range 4 6; Queue.range 7 9]
-printfn "Concat: 1..9: %O" (Queue.concat flatten)
+Test.equal
+    cartesian
+    (que [10;20;20;40;30;60;40;80;50;100])
+    "Cartesian through bind"
 
-printfn "init 5:   %O" (Queue.init 5 (fun x -> x * 2))
-printfn "indexed:  %O" (Queue.indexed (que [1..5]))
-printfn "Is Empty: %b" (Queue.isEmpty (Queue.skip 2 (que [1;2])))
-printfn "Item 3 of [1..10]: %A" (Queue.item 3 (que [1..10]))
+Test.equal
+    cartesian
+    (Queue.lift2 (fun x y -> x * y) (Queue.range 1 5) (que [10;20]))
+    "cartesian with Queue.lift2"
 
-let isEven x = x % 2 = 0
-let square x = x * x
+Test.equal
+    (Queue.concat (que [Queue.range 1 3; Queue.range 4 6; Queue.range 7 9]))
+    (Queue.range 1 9)
+    "Queue.concat"
 
-let chooser x =
+Test.equal
+    (Queue.init 5 double)
+    (Queue.range 0 4 |> Queue.map double)
+    "Queue.init"
+
+Test.equal
+    (Queue.indexed (que ["A";"B";"C"]))
+    (que [(0,"A"); (1,"B"); (2,"C")])
+    "Queue.indexed"
+
+Test.equal
+    (Queue.indexed (que ["A";"B";"C"]))
+    (Queue.zip (Queue.range 0 2) (que ["A";"B";"C"]))
+    "Queue.indexed 2"
+
+Test.equal
+    (Queue.isEmpty (Queue.skip 2 (que [1;2])))
+    true
+    "Queue.isEmpty"
+
+Test.equal (Queue.item  3 (que [1..10])) (ValueSome 4) "item 3"
+Test.equal (Queue.item -2 (que [1..10])) ValueNone     "item -2"
+Test.equal (Queue.item 10 (que [1..10])) ValueNone     "item 10"
+
+let evenSquare x =
     if isEven x then ValueSome (square x)
                 else ValueNone
-printfn "even->square [1..10]: %O" (Queue.choose chooser (que [1..10]))
 
-printfn "Zip: %O" (Queue.zip (que ["A";"B";"C";"D"]) (que [1;2;3]))
+let squareEven x =
+    let sqr = square x
+    if isEven sqr then ValueSome sqr else ValueNone
 
-printfn "Reduce: %A" (Queue.reduce (+) (que [1..5]))
+Test.equal
+    (Queue.choose evenSquare (que [1..10]))
+    (que [4;16;36;64;100])
+    "Queue.choose"
 
-printfn "forall StartWithA: %b" (que ["ABC"; "AGG"] |>  Queue.forall (fun s -> s.StartsWith "A"))
-printfn "forall StartWithA: %b" (que ["ABC"; "BGG"] |>  Queue.forall (fun s -> s.StartsWith "A"))
+Test.equal
+    (Queue.choose evenSquare (que [1..10]))
+    (Queue.filterMap isEven square (Queue.range 1 10))
+    "Queue.choose vs Queue.filterMap"
 
-printfn "any isEven: %b" (Queue.any isEven (que [1;3;4]))
-printfn "any isEven: %b" (Queue.any isEven (que [1;3;5]))
+Test.equal
+    (Queue.choose squareEven (Queue.range 1 10))
+    (Queue.mapFilter square isEven (Queue.range 1 10))
+    "Queue.choose vs Queue.mapFilter"
 
-printfn "Sum Float: %f" (Queue.sum (que [1.0; 1.5; 3.2]))
-printfn "Sum Int:   %d" (Queue.sum (que [1; 2; 3]))
+Test.equal
+    (Queue.range 1 10 |> Queue.filter isEven |> Queue.map square)
+    (Queue.filterMap isEven square (Queue.range 1 10))
+    "filter->map vs Queue.filterMap"
 
-printfn "Sorted: %O" (Queue.sort (que [5;12;5;1;-12]))
+Test.equal
+    (Queue.range 1 10 |> Queue.map square |> Queue.filter isEven)
+    (Queue.mapFilter square isEven (Queue.range 1 10))
+    "map->filter vs Queue.mapFilter"
 
-printfn "[1-10]: %O" (Queue.range 1 10)
-printfn "[1-10]: %O" (Queue.range 1.0 10.0)
+Test.equal
+    (Queue.zip (que ["A";"B";"C";"D"]) (que [1;2;3]))
+    (que ["A",1; "B",2; "C",3])
+    "Queue.zip"
 
-printfn "[1..2..10]: %O" (Queue.rangeWithStep 1 2 10)
-printfn "[1.0..0.2..2.3]: %O" (Queue.rangeWithStep 1.0 0.2 2.3)
+Test.equal
+    (Queue.reduce (+) (que [1..5]))
+    (ValueSome 15)
+    "reduce"
 
-let add x y = x + y
-printfn "lift2: add [1;2] [10;20]: %O" (Queue.lift2 add (que [1;2]) (que [10;20]))
+Test.equal
+    (Queue.reduce (+) (que [10]))
+    (ValueSome 10)
+    "reduce 2"
+
+Test.equal
+    (Queue.reduce (+) Queue.empty)
+    ValueNone
+    "reduce 3"
+
+Test.equal
+    (Queue.reduce (+) (que ["A";"B";"C"]))
+    (ValueSome "ABC")
+    "reduce 4"
+
+Test.ok
+    (que ["ABC"; "AGG"] |>  Queue.forall (fun s -> s.StartsWith "A"))
+    "forall"
+
+Test.notOk
+    (que ["ABC"; "BGG"] |>  Queue.forall (fun s -> s.StartsWith "A"))
+    "forall 2"
+
+Test.ok
+    (Queue.any isEven (que [1;3;4]))
+    "any"
+
+Test.notOk
+    (Queue.any isEven (que [1;3;5]))
+    "any 2"
+
+Test.ok
+    ((abs ((Queue.sum (que [1.1; 1.5; 3.2])) - 5.8)) < 0.0000001)
+    "Sum of Float"
+
+Test.equal
+    (Queue.sum (que [1; 2; 3]))
+    6
+    "Sum of Int"
+
+Test.equal
+    (Queue.sort (que [5;12;5;1;-12]))
+    (Queue.empty |> Queue.addMany [-12;1;5;5;12])
+    "Queue.sort"
+
+Test.equal
+    (Queue.range 1 10)
+    (Queue.empty |> Queue.addMany [1..10])
+    "addMany"
+
+Test.equal
+    (Queue.range 1.0 4.0)
+    (Queue.empty |> Queue.addMany [1.0;2.0;3.0;4.0])
+    "addMany 2"
+
+Test.equal
+    (Queue.range 1 10 |> Queue.length)
+    10
+    "range length"
+
+Test.equal
+    (Queue.rangeWithStep 1 2 10)
+    (que [1;3;5;7;9])
+    "rangeWithStep"
+
+let floatis x y =
+    (abs (x - y)) < 0.000001
+
+Test.ok
+    (Queue.forall (fun (x,y) -> floatis x y)
+        (Queue.zip
+            (Queue.rangeWithStep 1.0 0.2 2.3)
+            (que [1.0;1.2;1.4;1.6;1.8;2.0;2.2])))
+    "rangeWithStep float"
 
 let add4 x y z w = x + y + z + w
-let xs = que [3;7]
-let ys = que [10;20]
-let zs = que [100]
-let ws = que [1000;2000;3000]
-printfn "lift4 add4 %O %O %O %O: %O" xs ys zs ws (Queue.lift4 add4 xs ys zs ws)
+Test.equal
+    (Queue.lift4 add4 (que [3;7]) (que [10;20]) (Queue.one 100) (que [1000;2000;3000]))
+    (que [1113;2113;3113;1123;2123;3123;1117;2117;3117;1127;2127;3127])
+    "lift4"
 
-printfn "Length Should be 10: %d" (Queue.length (Queue.range 1 10))
-printfn "Length Should be  4: %d" (
+Test.equal
+    (Queue.length (Queue.range 1 10))
+    10
+    "Queue.length"
+
+let complex =
     Queue.range 1 10
     |> Queue.tail
-    |> ValueOption.map  (Queue.filter (fun x -> x % 2 = 0))
-    |> ValueOption.map  (Queue.add  1)
-    |> ValueOption.map  (Queue.skip 3)
-    |> ValueOption.map  (Queue.add  1)
-    |> ValueOption.map  (Queue.map (fun x -> x * 2))
-    |> ValueOption.bind  Queue.tail
-    |> ValueOption.map  (Queue.addMany [1;2;3])
-    |> ValueOption.map  (Queue.skip 2)
-    |> ValueOption.map  (Queue.length)
-    |> ValueOption.defaultValue -1
-)
+    |> Queue.filter isEven
+    |> Queue.add  5
+    |> Queue.skip 2
+    |> Queue.add  7
+    |> Queue.map square
+    |> Queue.tail
+    |> Queue.addMany [1;2;3]
 
+Test.equal (Queue.length complex) 7           "Complex length"
+Test.equal complex (que [64;100;25;49;1;2;3]) "Complex equal"
+Test.equal
+    (Queue.skipWhile isEven complex |> Queue.sort)
+    (que [1;2;3;25;49])
+    "skipWhile isEven sort"
+
+
+
+(*
 printfn "Length Should be  8: %d" (Queue.length (Queue.insertManyAt  2 [1;2;3] (Queue.range 1 5)))
 printfn "Length Should be  5: %d" (Queue.length (Queue.insertManyAt 10 [1;2;3] (Queue.range 1 5)))
 printfn "Length Should be 13: %d" (Queue.length (Queue.insertManyAtWithExpanding 0 10 [1;2;3] (Queue.range 1 5)))
