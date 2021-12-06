@@ -35,10 +35,15 @@ let square x = x * x
 // Actual Tests
 let q123 = Queue.empty |> Queue.add 1 |> Queue.add 2 |> Queue.add 3
 let r123 = Queue.range 1 3
-Test.equal q123 r123 "Queue [1;2;3]"
+Test.equal q123 r123 "add same as range"
 
 let r123' = Queue.append (que [10]) (Queue.range 1 3) |> Queue.tail
-Test.equal r123 r123' ""
+Test.equal r123 r123' "append 1"
+
+Test.equal
+    (Queue.append (Queue.one 1) (Queue.range 2 5))
+    (Queue.one 1 ++ (Queue.range 2 5))
+    "append ++"
 
 Test.equal    (Queue.range 1 10) (Queue.range 1 10) "Two equal Queues"
 Test.notEqual (Queue.range 1 5)  (Queue.range 1 10) "None equal Queues"
@@ -249,6 +254,11 @@ Test.equal
     "addMany 2"
 
 Test.equal
+    (Queue.addMany [4;5;6] (Queue.range 1 3))
+    (Queue.range 1 6)
+    "addMany 3"
+
+Test.equal
     (Queue.range 1 10 |> Queue.length)
     10
     "range length"
@@ -297,102 +307,401 @@ Test.equal
     (que [1;2;3;25;49])
     "skipWhile isEven sort"
 
+Test.equal
+    (Queue.insertAt -1 100 (Queue.range 1 5))
+    (que [1;2;3;4;5])
+    "insertAt 1"
 
+Test.equal
+    (Queue.insertAt 0 100 Queue.empty)
+    (Queue.one 100)
+    "insertAt 2"
 
-(*
-printfn "Length Should be  8: %d" (Queue.length (Queue.insertManyAt  2 [1;2;3] (Queue.range 1 5)))
-printfn "Length Should be  5: %d" (Queue.length (Queue.insertManyAt 10 [1;2;3] (Queue.range 1 5)))
-printfn "Length Should be 13: %d" (Queue.length (Queue.insertManyAtWithExpanding 0 10 [1;2;3] (Queue.range 1 5)))
+Test.equal
+    (Queue.insertAt 1 100 Queue.empty)
+    (Queue.empty)
+    "insertAt 3"
 
-printfn "insertAt -1 100 [1..5]: %O" (Queue.insertAt -1 100 (Queue.range 1 5))
-printfn "insertAt 0 100 empty:   %O" (Queue.insertAt 0 100 Queue.empty)
-printfn "insertAt 1 100 empty:   %O" (Queue.insertAt 1 100 Queue.empty)
-printfn "insertAt 1 100 [1..10]: %O" (Queue.insertAt 1 100 (Queue.range 1 10))
+Test.equal
+    (Queue.insertAt 1 100 (Queue.range 1 10))
+    (Queue.concat (que [Queue.one 1; Queue.one 100; Queue.range 2 10]))
+    "insertAt 4"
 
-printfn "insertAtWithExpanding 0 -1 10 empty: %O" (Queue.insertAtWithExpanding 0 -1 10 Queue.empty)
-printfn "insertAtWithExpanding 0  4 10 empty: %O" (Queue.insertAtWithExpanding 0  4 10 Queue.empty)
-printfn "allPairs: %O" (Queue.allPairs (que ["A";"B"]) (que [1;2]))
-printfn "chunkBySize 3 [1..10]: %O" (Queue.chunkBySize 3 (que [1..10]))
-printfn "zip3 [1;2;3] [10;20] [4;4;4;4]: %O" (Queue.zip3 (que [1;2;3]) (que [10;20]) (que [4;4;4;4]))
-printfn "countBy: %O" (Queue.countBy id (que ["Hallo";"Hallo";"Welt";"Hallo"]))
-printfn "exactlyOne [5;1]: %A" (Queue.exactlyOne (que [5;1]))
-printfn "exactlyOne [5]:   %A" (Queue.exactlyOne (que [5]))
+Test.equal
+    (Queue.insertAt 3 100 (que [6;4;2]))
+    (que [6;4;2;100])
+    "insertAt 5"
 
-printfn "findIndex isEven [3;3;5;2]: %A" (Queue.findIndex isEven (que [3;3;5;2]))
-printfn "findIndex isEven [3;3;5]:   %A" (Queue.findIndex isEven (que [3;3;5]))
+Test.equal
+    (Queue.insertAt 4 100 (que [6;4;2]))
+    (que [6;4;2])
+    "insertAt 6"
 
-printfn "addMany [4;5;6] [1;2;3]: %O" (Queue.addMany [4;5;6] (Queue.range 1 3))
-printfn "rev [1..5]: %O" (Queue.rev (Queue.range 1 5))
+Test.equal
+    (Queue.insertAtGrow 0 -1 10 Queue.empty)
+    (Queue.empty)
+    "insertAtGrow 1"
 
-printfn "findIndex     isEven [1;2;3;4;5]: %A" (Queue.findIndex     isEven (Queue.range 1 5))
-printfn "findIndexBack isEven [1;2;3;4;5]: %A" (Queue.findIndexBack isEven (Queue.range 1 5))
-printfn "find          isEven [1;2;3;4;5]: %A" (Queue.find     isEven (Queue.range 1 5))
-printfn "findBack      isEven [1;2;3;4;5]: %A" (Queue.findBack isEven (Queue.range 1 5))
+Test.equal
+    (Queue.insertAtGrow 0  4 10 Queue.empty)
+    (Queue.add 10 (Queue.repeat 4 0))
+    "insertAtGrow 2"
 
-printfn "updateAtWithExpanding 0 2  100 [1..10]: %O" (Queue.updateAtWithExpanding 0 2  100 (Queue.range 1 10))
-printfn "updateAtWithExpanding 0 15 100 [1..10]: %O" (Queue.updateAtWithExpanding 0 15 100 (Queue.range 1 10))
+Test.equal
+    (Queue.insertAtGrow 0  2 10 (Queue.range 1 5))
+    (Queue.insertAt        2 10 (Queue.range 1 5))
+    "insertAtGrow 3"
 
-printfn "insertManyAt  0 [1;2;3] [10..20]: %O" (Queue.insertManyAt  0 [1;2;3] (Queue.range 10 20))
-printfn "insertManyAt  4 [1;2;3] [10..20]: %O" (Queue.insertManyAt  4 [1;2;3] (Queue.range 10 20))
-printfn "insertManyAt 20 [1;2;3] [10..20]: %O" (Queue.insertManyAt 20 [1;2;3] (Queue.range 10 20))
+Test.equal
+    (Queue.insertAtGrow 0  0 10 Queue.empty)
+    (Queue.one 10)
+    "insertAtGrow 4"
 
-printfn "insertManyAtWithExpanding 0  0 [1;2;3] [10..20]: %O" (Queue.insertManyAtWithExpanding 0  0 [1;2;3] (Queue.range 10 20))
-printfn "insertManyAtWithExpanding 0  4 [1;2;3] [10..20]: %O" (Queue.insertManyAtWithExpanding 0  4 [1;2;3] (Queue.range 10 20))
-printfn "insertManyAtWithExpanding 0 20 [1;2;3] [10..20]: %O" (Queue.insertManyAtWithExpanding 0 20 [1;2;3] (Queue.range 10 20))
+Test.equal
+    (Queue.length (Queue.insertAtGrow 0  9 10 Queue.empty))
+    10
+    "insertAtGrow 5"
 
-printfn "slice 0  3 [1..10]: %O" (Queue.slice 0  3 (Queue.range 1 10))
-printfn "slice 3  7 [1..10]: %O" (Queue.slice 3  7 (Queue.range 1 10))
-printfn "slice 5 20 [1..10]: %O" (Queue.slice 5 20 (Queue.range 1 10))
-printfn "slice 0  0 [1..10]: %O" (Queue.slice 0  0 (Queue.range 1 10))
+Test.equal
+    (Queue.lastIndex (Queue.insertAtGrow 0  9 10 Queue.empty))
+    9
+    "insertAtGrow 6"
 
-printfn "takeWhile isEven [2;4;6;7;3;2]: %O" (Queue.takeWhile isEven (que [2;4;6;7;3;2]))
-printfn "skipWhile isEven [2;4;6;7;3;2]: %O" (Queue.skipWhile isEven (que [2;4;6;7;3;2]))
+Test.equal
+    (Queue.allPairs (que ["A";"B"]) (que [1;2]))
+    (que ["A",1; "A",2; "B",1; "B",2])
+    "allPairs"
 
-printfn "equal true:  %b" (Queue.equal (Queue ([1;2;3],[],3)) (Queue ([],[3;2;1],3)))
-printfn "equal true:  %b" (Queue.equal (Queue ([1],[3;2],3))  (Queue ([],[3;2;1],3)))
-printfn "equal false: %b" (Queue.equal (Queue.range 1 5) (Queue.range 1 6))
-printfn "equal false: %b" (Queue.equal (que [1;2;3]) (que [1;5;3]))
+Test.equal
+    (Queue.chunkBySize 3 (que [1..10]))
+    (que [que [1;2;3]; que [4;5;6]; que [7;8;9]; Queue.one 10])
+    "chunkBySize"
 
-printfn "scan: %O" (Queue.scan (fun l x -> x :: l) [] (Queue.range 1 5))
-printfn "Last [1..10]: %A" (Queue.last (Queue.range 1 10))
+Test.equal
+    (Queue.chunkBySize 3 Queue.empty)
+    (Queue.empty)
+    "chunkBySize 2"
+
+Test.equal
+    (Queue.chunkBySize 3 (Queue.one 1))
+    (Queue.one (Queue.one 1))
+    "chunkBySize 3"
+
+Test.equal
+    (Queue.zip3 (que [1;2;3]) (que [10;20]) (que [4;4;4;4]))
+    (Queue.one (1,10,4) |> Queue.add (2,20,4))
+    "Zip3"
+
+let nameOccurrences = Queue.countBy id (que ["Hallo";"Hallo";"Welt";"Hallo"])
+Test.equal
+    (Queue.find (fun (str,n) -> str = "Hallo") nameOccurrences)
+    (ValueSome ("Hallo", 3))
+    "CountBy 1"
+
+Test.equal
+    (Queue.find (fun (str,n) -> str = "Welt") nameOccurrences)
+    (ValueSome ("Welt", 1))
+    "CountBy 2"
+
+Test.equal (Queue.length nameOccurrences) 2 "countBy 3"
+
+Test.equal
+    (Queue.rev (Queue.range 1 5))
+    (que [5;4;3;2;1])
+    "rev 1"
+
+Test.equal
+    (Queue.rev (que [5;4;3;2;1]))
+    (Queue.range 1 5)
+    "rev 2"
+
+Test.equal
+    (Queue.range 1 5)
+    (Queue.rev (Queue.rev (Queue.range 1 5)))
+    "rev 3"
+
+Test.equal
+    (Queue.rev Queue.empty)
+    Queue.empty
+    "rev 4"
+
+Test.equal
+    (Queue.exactlyOne (Queue.tail (Queue.rev (Queue.one 100 |> Queue.add 10))))
+    (ValueSome 100)
+    "rev 5"
+
+Test.equal (Queue.exactlyOne    (que [5;1]))               (ValueNone   ) "exactlyOne 1"
+Test.equal (Queue.exactlyOne    (que [5;1] |> Queue.tail)) (ValueSome  1) "exactlyOne 2"
+Test.equal (Queue.findIndex     isEven (que [3;3;5;2]))    (ValueSome  3) "findIndex 1"
+Test.equal (Queue.findIndex     isEven (que [3;3;5]))      (ValueNone   ) "findIndex 2"
+Test.equal (Queue.findIndex     isEven (Queue.range 1 5))  (ValueSome  1) "findIndex 3"
+Test.equal (Queue.findIndex     isEven (que [1;3;5]))      (ValueNone   ) "findIndex 4"
+Test.equal (Queue.findIndexBack isEven (Queue.range 1 5))  (ValueSome  3) "findIndexBack 1"
+Test.equal (Queue.findIndexBack isEven (que [5;3;1]))      (ValueNone   ) "findIndexBack 2"
+Test.equal (Queue.find          isEven (Queue.range 9 20)) (ValueSome 10) "find 1"
+Test.equal (Queue.find          isEven (que [9;13;15]))    (ValueNone   ) "find 2"
+Test.equal (Queue.findBack      isEven (Queue.range 9 19)) (ValueSome 18) "findBack 1"
+Test.equal (Queue.findBack      isEven (que [15;17;19]))   (ValueNone   ) "findBack 2"
+
+Test.equal
+    (Queue.updateAtGrow 0 2 100 (Queue.range 1 10))
+    (que [1;2;100] |> Queue.addMany (Queue.range 4 10))
+    "updateAtGrow 1"
+
+Test.equal
+    (Queue.updateAtGrow 0 15 100 (Queue.range 1 10))
+    (Queue.range 1 10 |> Queue.addMany (Queue.repeat 5 0) |> Queue.add 100)
+    "updateAtGrow 2"
+
+Test.equal
+    (Queue.updateAtGrow 0 -1 100 (Queue.range 1 10))
+    (Queue.range 1 10)
+    "updateAtGrow 3"
+
+Test.equal
+    (Queue.updateAtGrow 0 0 100 (Queue.empty))
+    (Queue.one 100)
+    "updateAtGrow 4"
+
+Test.equal
+    (Queue.insertManyAt  2 [1;2;3] (Queue.range 1 5))
+    (que [1;2;1;2;3;3;4;5])
+    "insertManyAt 1"
+
+Test.equal
+    (Queue.insertManyAt 10 [1;2;3] (Queue.range 1 5))
+    (Queue.range 1 5)
+    "insertManyAt 2"
+
+Test.equal
+    (Queue.insertManyAt  0 [1;2;3] (Queue.range 10 15))
+    (que [1;2;3;10;11;12;13;14;15])
+    "insertManyAt 3"
+
+Test.equal
+    (Queue.insertManyAt -1 [1;2;3] (Queue.range 10 15))
+    (Queue.tail (Queue.one 0 |> Queue.addMany (Queue.range 10 15)))
+    "insertManyAt 4"
+
+Test.equal
+    (Queue.insertManyAt  4 [1;2;3] (Queue.range 10 20))
+    (que [10;11;12;13;1;2;3;14;15;16;17;18;19;20])
+    "insertManyAt 5"
+
+Test.equal
+    (Queue.insertManyAt 20 [1;2;3] (Queue.range 10 20))
+    (Queue.append (Queue.range 10 15) (Queue.range 16 20))
+    "insertManyAt 6"
+
+Test.equal
+    (Queue.insertManyAt 5 [1;2;3] (Queue.range 10 14))
+    (Queue.append (Queue.range 10 14) (Queue.range 1 3))
+    "insertManyAt 7"
+
+Test.equal
+    (Queue.insertManyAt 6 [1;2;3] (Queue.range 10 14))
+    (Queue.range 10 14)
+    "insertManyAt 8"
+
+Test.equal
+    (Queue.insertManyAtGrow 0 10 [1;2;3] (Queue.range 1 5))
+    (que [1;2;3;4;5;0;0;0;0;0;1;2;3])
+    "insertManyAtGrow 1"
+
+Test.equal
+    (Queue.insertManyAtGrow 0  0 [1;2;3] (Queue.range 10 20))
+    ((Queue.range 1 3) ++ (Queue.range 10 20))
+    "insertManyAtGrow 2"
+
+Test.equal
+    (Queue.insertManyAtGrow 0  4 [1;2;3] (Queue.range 10 20))
+    ((Queue.range 10 13) ++ (Queue.range 1 3) ++ (Queue.range 14 20))
+    "insertManyAtGrow 3"
+
+Test.equal
+    (Queue.insertManyAtGrow 0 20 [1;2;3] (Queue.range 10 20))
+    (Queue.concat (que [(Queue.range 10 20); (Queue.repeat 9 0); (Queue.range 1 3);]))
+    "insertManyAtGrow 4"
+
+Test.equal
+    (Queue.item 20 (Queue.insertManyAtGrow 0 20 [1;2;3] (Queue.range 10 20)))
+    (ValueSome 1)
+    "insertManyAtGrow 5"
+
+Test.equal
+    (Queue.slice 20 22 (Queue.insertManyAtGrow 0 20 [1;2;3] (Queue.range 10 20)))
+    (Queue.range 1 3)
+    "insertManyAtGrow 6"
+
+Test.equal
+    (Queue.slice 19 23 (Queue.insertManyAtGrow 0 20 [1;2;3] (Queue.range 10 20)))
+    (que [0;1;2;3])
+    "insertManyAtGrow 7"
+
+Test.equal
+    (Queue.sliceGrow 0 19 23 (Queue.insertManyAtGrow 0 20 [1;2;3] (Queue.range 10 20)))
+    (que [0;1;2;3;0])
+    "insertManyAtGrow 8"
+
+Test.equal (Queue.slice   0  3 (Queue.range 1 10)) (Queue.range 1 4)  "slice 1"
+Test.equal (Queue.slice   3  7 (Queue.range 1 10)) (Queue.range 4 8)  "slice 2"
+Test.equal (Queue.slice   5 20 (Queue.range 1 10)) (Queue.range 6 10) "slice 3"
+Test.equal (Queue.slice   0  0 (Queue.range 1 10)) (Queue.one 1)      "slice 4"
+Test.equal (Queue.slice   2  2 (Queue.range 1 10)) (Queue.one 3)      "slice 5"
+Test.equal (Queue.slice -10  3 (Queue.range 1 10)) (Queue.range 1 4)  "slice 6"
+Test.equal (Queue.slice  10 12 (Queue.range 1  5)) (Queue.empty)      "slice 7"
+Test.equal (Queue.slice -5 -10 (Queue.range 1  5)) (Queue.empty)      "slice 8"
+Test.equal (Queue.slice  10  5 (Queue.range 1  5)) (Queue.empty)      "slice 9"
+
+Test.equal (Queue.sliceGrow -1   0   3 (Queue.range 1 10)) (Queue.range 1 4)   "sliceGrow 1"
+Test.equal (Queue.sliceGrow -1   3   7 (Queue.range 1 10)) (Queue.range 4 8)   "sliceGrow 2"
+Test.equal (Queue.sliceGrow -1   5  20 (Queue.range 1 10)) (Queue.range 6 10 ++ Queue.repeat 11 -1) "sliceGrow 3"
+Test.equal (Queue.sliceGrow -1   0   0 (Queue.range 1 10)) (Queue.one 1)       "sliceGrow 4"
+Test.equal (Queue.sliceGrow -1   2   2 (Queue.range 1 10)) (Queue.one 3)       "sliceGrow 5"
+Test.equal (Queue.sliceGrow -1 -10   3 (Queue.range 1 10)) (Queue.range 1 4)   "sliceGrow 6"
+Test.equal (Queue.sliceGrow -1  10  12 (Queue.range 1  5)) (Queue.repeat 3 -1) "sliceGrow 7"
+Test.equal (Queue.sliceGrow -1  -5 -10 (Queue.range 1  5)) (Queue.empty)       "sliceGrow 8"
+Test.equal (Queue.sliceGrow -1  10   5 (Queue.range 1  5)) (Queue.empty)       "sliceGrow 9"
+
+Test.equal
+    (Queue.pick (fun x -> if isEven x then ValueSome (x * 2) else ValueNone) (que [1;3;5]))
+    ValueNone
+    "pick 1"
+
+Test.equal
+    (Queue.pick (fun x -> if isEven x then ValueSome (x * 2) else ValueNone) (que [1;4;5]))
+    (ValueSome 8)
+    "pick 2"
+
+Test.equal
+    (Queue.takeWhile isEven (que [2;4;6;7;3;2]))
+    (Queue.rangeWithStep 2 2 6)
+    "takeWhile 1"
+
+Test.equal
+    (Queue.skipWhile isEven (que [2;4;6;7;3;2]))
+    (Queue.skip 3 (que [2;4;6;7;3;2]))
+    "takeWhile 2"
+
+Test.ok    (Queue.equal (Queue ([1;2;3],[],3)) (Queue ([],[3;2;1],3))) "equal 1"
+Test.ok    (Queue.equal (Queue ([1],[3;2],3))  (Queue ([],[3;2;1],3))) "equal 2"
+Test.notOk (Queue.equal (Queue.range 1 5) (Queue.range 1 6))           "equal 3"
+Test.notOk (Queue.equal (que [1;2;3]) (que [1;5;3]))                   "equal 4"
+
+Test.equal
+    (Queue.scan (fun q x -> Queue.add x q) Queue.empty (Queue.range 1 5))
+    (que [
+        Queue.empty
+        Queue.one 1
+        Queue.range 1 2
+        Queue.range 1 3
+        Queue.range 1 4
+        Queue.range 1 5
+    ])
+    "scan 1"
+
+Test.equal
+    (Queue.scan (fun sum x -> sum + x) 0 (Queue.range 1 5))
+    (que [0;1;3;6;10;15])
+    "scan 2"
+
+Test.equal (Queue.last (Queue.range 1 10)) (ValueSome 10) "last 1"
+Test.equal (Queue.last (Queue.empty))      (ValueNone)    "last 2"
+
 
 let isGreater x y =
     if   x = y then 0
     elif x > y then 1
     else -1
 
-printfn "compare [1..3] [1..3]:   %d" (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 3))
-printfn "compare [1..4] [1..3]:   %d" (Queue.compareWith isGreater (Queue.range 1 4) (Queue.range 1 3))
-printfn "compare [1..3] [1..4]:   %d" (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 4))
-printfn "compare [1] [2]:         %d" (Queue.compareWith isGreater (Queue.one 1) (Queue.one 2))
-printfn "compare [2] [1]:         %d" (Queue.compareWith isGreater (Queue.one 2) (Queue.one 1))
-printfn "compare [2;1] [1;2]:     %d" (Queue.compareWith isGreater (que [2;1]) (que [1;2]))
-printfn "compare [1;2;3] [1;2;4]: %d" (Queue.compareWith isGreater (que [1;2;3]) (que [1;2;4]))
+Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 3))  0 "compare 1"
+Test.equal (Queue.compareWith isGreater (Queue.range 1 4) (Queue.range 1 3))  1 "compare 2"
+Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 4)) -1 "compare 3"
+Test.equal (Queue.compareWith isGreater (Queue.one 1)     (Queue.one 2))     -1 "compare 4"
+Test.equal (Queue.compareWith isGreater (Queue.one 2)     (Queue.one 1))      1 "compare 5"
+Test.equal (Queue.compareWith isGreater (que [2;1])       (que [1;2]))        1 "compare 6"
+Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [1;2;4]))     -1 "compare 7"
+Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [0;2;4;8]))    1 "compare 8"
 
-let add1 x = x + 1
-printfn "MapFilter add1 isEven: [1..10]: %O" (Queue.mapFilter add1 isEven (Queue.range 1 10))
-printfn "FilterMap isEven add1: [1..10]: %O" (Queue.filterMap isEven add1 (Queue.range 1 10))
-printfn "sliceGrow 0  7 12 [1..10]: %O" (Queue.sliceGrow 0  7 12 (Queue.range 1 10))
-printfn "sliceGrow 0  9 10 [1..10]: %O" (Queue.sliceGrow 0  9 10 (Queue.range 1 10))
-printfn "sliceGrow 0 10 10 [1..10]: %O" (Queue.sliceGrow 0 10 10 (Queue.range 1 10))
-printfn "sliceGrow 0 -5  5 [1..10]: %O" (Queue.sliceGrow 0 -5  5 (Queue.range 1 10))
-printfn "sliceGrow 0  5  5 [1..10]: %O" (Queue.sliceGrow 0  5  5 (Queue.range 1 10))
-printfn "sliceGrow 0 11 13 [1..10]: %O" (Queue.sliceGrow 0 11 13 (Queue.range 1 10))
-printfn "sliceGrow 0 -5 14 [1..10]: %O" (Queue.sliceGrow 0 -5 14 (Queue.range 1 10))
-printfn "sliceGrow 0 20 10 [1..10]: %O" (Queue.sliceGrow 0 20 10 (Queue.range 1 10))
-printfn "sliceGrow 0  5 0  [1..10]: %O" (Queue.sliceGrow 0  5  0 (Queue.range 1 10))
-printfn "repeat  0  0: %O" (Queue.repeat  0 0)
-printfn "repeat  1  0: %O" (Queue.repeat  1 0)
-printfn "repeat -5  0: %O" (Queue.repeat -5 0)
-printfn "repeat 10 10: %O" (Queue.repeat 10 0)
-printfn "evens|unevens: %O" (Queue.partition isEven (Queue.range 1 10))
-printfn "min [1;10;3]: %O" (Queue.min (que [1;10;3]))
-printfn "max [1;10;3]: %O" (Queue.max (que [1;10;3]))
-printfn "minBy String.length [\"Hallo\";\"Welt\"]: %O" (Queue.minBy String.length (que ["Hallo";"Welt"]))
-printfn "maxBy String.length [\"Hallo\";\"Welt\"]: %O" (Queue.maxBy String.length (que ["Hallo";"Welt"]))
+Test.equal
+    (Queue.mapFilter add1 isEven (Queue.range 1 10))
+    (Queue.range 1 10 |> Queue.map add1 |> Queue.filter isEven)
+    "mapFilter"
 
-*)
+Test.equal
+    (Queue.filterMap isEven add1 (Queue.range 1 10))
+    (Queue.range 1 10 |> Queue.filter isEven |> Queue.map add1)
+    "filterMap"
 
+Test.equal
+    (Queue.mapReduce square (-) (Queue.range 1 3))
+    (ValueSome -12)
+    "mapReduce 1"
+
+Test.equal
+    (Queue.mapReduce square (-) Queue.empty)
+    ValueNone
+    "mapReduce 2"
+
+Test.equal
+    (Queue.mapReduce square (-) (Queue.range 1 3))
+    (Queue.range 1 3 |> Queue.map square |> Queue.reduce (-))
+    "mapReduce 3"
+
+Test.equal
+    (Queue.mapFold square (-) 0 (Queue.range 1 3))
+    (-14)
+    "mapFold 1"
+
+Test.equal
+    (Queue.mapFold square (-) 0 Queue.empty)
+    0
+    "mapFold 2"
+
+Test.equal
+    (Queue.mapFold square (-) 0 (Queue.range 1 3))
+    (Queue.range 1 3 |> Queue.map square |> Queue.fold (-) 0)
+    "mapfold 3"
+
+Test.equal
+    (Queue.foldi (fun i q x -> Queue.add (i,x) q) Queue.empty (Queue.range 1 10))
+    (Queue.indexed (Queue.range 1 10))
+    "foldi"
+
+Test.equal (Queue.repeat  0 0) (Queue.empty)     "repeat 1"
+Test.equal (Queue.repeat  1 0) (Queue.one 0)     "repeat 2"
+Test.equal (Queue.repeat -5 0) (Queue.empty)     "repeat 3"
+Test.equal (Queue.repeat  5 0) (que [0;0;0;0;0]) "repeat 4"
+Test.equal (Queue.repeat  3 1) (que [1;1;1])     "repeat 5"
+
+let evens,odds = Queue.partition isEven (Queue.range 1 10)
+Test.ok (Queue.forall isEven          evens) "partition 1"
+Test.ok (Queue.forall (not << isEven)  odds) "partition 2"
+
+Test.equal (Queue.min (que [1;10;3])) (ValueSome 1)  "min 1"
+Test.equal (Queue.min Queue.empty)    (ValueNone)    "min 2"
+Test.equal (Queue.max (que [1;10;3])) (ValueSome 10) "max 1"
+Test.equal (Queue.max Queue.empty)    (ValueNone)    "max 2"
+
+Test.equal
+    (Queue.minBy String.length (que ["Hallo";"Welt"]))
+    (ValueSome "Welt")
+    "minBy 1"
+
+Test.equal
+    (Queue.minBy String.length Queue.empty)
+    (ValueNone)
+    "minBy 2"
+
+Test.equal
+    (Queue.maxBy String.length (que ["Hallo";"Welt"]))
+    (ValueSome "Hallo")
+    "maxBy 1"
+
+Test.equal
+    (Queue.maxBy String.length Queue.empty)
+    (ValueNone)
+    "maxBy 2"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()

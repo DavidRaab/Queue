@@ -11,8 +11,10 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
 
     member this.Head () =
         match this with
-        | Queue([],[],_) -> ValueNone
-        | Queue([],r,l)  ->
+        | Queue([] ,[],_)  -> ValueNone
+        | Queue([x],[],1)  -> ValueSome (x,Queue([],[],0))
+        | Queue([] ,[x],1) -> ValueSome (x,Queue([],[],0))
+        | Queue([] ,r,l)   ->
             let newQ = List.rev r
             ValueSome (List.head newQ, Queue((List.tail newQ),[],(l-1)))
         | Queue(q,a,l)   ->
@@ -197,6 +199,22 @@ module Queue =
         | r ,[]      -> ValueSome (List.last r)
         | _ ,last::a -> ValueSome last
 
+    let mapReduce mapper reducer queue =
+        let rec loop state queue =
+            match head queue with
+            | ValueNone           -> ValueSome state
+            | ValueSome (x,queue) -> loop (reducer state (mapper x)) queue
+        match head queue with
+        | ValueNone           -> ValueNone
+        | ValueSome (x,queue) -> loop (mapper x) queue
+
+    let mapFold mapper folder (state:'State) queue =
+        let rec loop state queue =
+            match head queue with
+            | ValueNone           -> state
+            | ValueSome (x,queue) -> loop (folder state (mapper x)) queue
+        loop state queue
+
     let max queue =
         let folder state x =
             match state with
@@ -294,10 +312,9 @@ module Queue =
             | ValueSome _, ValueNone   ->  1
             | ValueNone  , ValueSome _ -> -1
             | ValueSome (x,q1), ValueSome (y,q2) ->
-                let ret = comparer x y
-                if   ret = 0
-                then loop q1 q2
-                else ret
+                match comparer x y with
+                | 0 -> loop q1 q2
+                | x -> x
         loop queue1 queue2
 
     let allPairs queue1 queue2 =
@@ -311,8 +328,8 @@ module Queue =
                 match head queue with
                 | ValueNone       -> add inner outer
                 | ValueSome (x,t) -> loop (amount+1) t (add x inner) outer
-        if   size < 0
-        then add empty empty
+        if   size < 0 || isEmpty queue
+        then empty
         else loop 0 queue empty empty
 
     let item idx queue =
@@ -415,11 +432,11 @@ module Queue =
             | 0,   ValueSome (x,t) -> loop -1 t (add x (add value newQ))
             | idx, ValueNone       -> newQ
             | idx, ValueSome (x,t) -> loop (idx-1) t (add x newQ)
-        if   index < 0 || index >= lastIndex queue
-        then queue
+        if   (index-1) = lastIndex queue          then add value queue
+        elif index < 0 || index > lastIndex queue then queue
         else loop index queue empty
 
-    let insertAtWithExpanding zeroElement index value queue =
+    let insertAtGrow zeroElement index value queue =
         let rec loop index queue newQ =
             match index, head queue with
             | (idx,ValueNone) when idx < 0 -> newQ
@@ -440,7 +457,7 @@ module Queue =
         then queue
         else foldi folder empty queue
 
-    let updateAtWithExpanding zeroElement index value queue =
+    let updateAtGrow zeroElement index value queue =
         let rec loop index queue newQ =
             match index, head queue with
             | 0,     ValueNone                -> add value newQ
@@ -463,7 +480,7 @@ module Queue =
         then queue
         else loop index queue empty
 
-    let insertManyAtWithExpanding zeroElement index values queue =
+    let insertManyAtGrow zeroElement index values queue =
         let rec loop index queue newQ =
             match index, head queue with
             | (idx,ValueNone) when idx < 0 -> newQ
@@ -572,6 +589,16 @@ module Queue =
             else alreadyFound
         ) ValueNone queue
 
+    let pick chooser queue =
+        let rec loop queue =
+            match head queue with
+            | ValueNone           -> ValueNone
+            | ValueSome (x,queue) ->
+                match chooser x with
+                | ValueNone   -> loop queue
+                | ValueSome x -> ValueSome x
+        loop queue
+
     // Mappings
     let replicate = repeat
     let collect   = bind
@@ -639,4 +666,5 @@ module Queue =
 
 #nowarn "60"
 type Queue<'a> with
-    override q.ToString() = sprintf "Queue %A" (Queue.toList q)
+    override q.ToString()      = sprintf "Queue %A" (Queue.toList q)
+    static member (++) (q1,q2) = Queue.append q1 q2
