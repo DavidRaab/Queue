@@ -268,11 +268,11 @@ Test.equal
     (que [1;3;5;7;9])
     "rangeWithStep"
 
-let floatis x y =
+let isFloat x y =
     (abs (x - y)) < 0.000001
 
 Test.ok
-    (Queue.forall (fun (x,y) -> floatis x y)
+    (Queue.forall (fun (x,y) -> isFloat x y)
         (Queue.zip
             (Queue.rangeWithStep 1.0 0.2 2.3)
             (que [1.0;1.2;1.4;1.6;1.8;2.0;2.2])))
@@ -614,14 +614,14 @@ let isGreater x y =
     elif x > y then 1
     else -1
 
-Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 3))  0 "compare 1"
-Test.equal (Queue.compareWith isGreater (Queue.range 1 4) (Queue.range 1 3))  1 "compare 2"
-Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 4)) -1 "compare 3"
-Test.equal (Queue.compareWith isGreater (Queue.one 1)     (Queue.one 2))     -1 "compare 4"
-Test.equal (Queue.compareWith isGreater (Queue.one 2)     (Queue.one 1))      1 "compare 5"
-Test.equal (Queue.compareWith isGreater (que [2;1])       (que [1;2]))        1 "compare 6"
-Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [1;2;4]))     -1 "compare 7"
-Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [0;2;4;8]))    1 "compare 8"
+Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 3))  0 "compareWith 1"
+Test.equal (Queue.compareWith isGreater (Queue.range 1 4) (Queue.range 1 3))  1 "compareWith 2"
+Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 4)) -1 "compareWith 3"
+Test.equal (Queue.compareWith isGreater (Queue.one 1)     (Queue.one 2))     -1 "compareWith 4"
+Test.equal (Queue.compareWith isGreater (Queue.one 2)     (Queue.one 1))      1 "compareWith 5"
+Test.equal (Queue.compareWith isGreater (que [2;1])       (que [1;2]))        1 "compareWith 6"
+Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [1;2;4]))     -1 "compareWith 7"
+Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [0;2;4;8]))    1 "compareWith 8"
 
 Test.equal
     (Queue.mapFilter add1 isEven (Queue.range 1 10))
@@ -702,6 +702,128 @@ Test.equal
     (Queue.maxBy String.length Queue.empty)
     (ValueNone)
     "maxBy 2"
+
+Test.equal
+    (Queue.intersperse "on" (Queue.empty))
+    (Queue.empty)
+    "intersperse 1"
+
+Test.equal
+    (Queue.intersperse "on" (Queue.one "Hallo"))
+    (Queue.one "Hallo")
+    "intersperse 2"
+
+Test.equal
+    (Queue.intersperse "on" (que ["Foo";"Bar"]))
+    (Queue.empty |> Queue.addMany ["Foo";"on";"Bar"])
+    "intersperse 3"
+
+Test.equal
+    (Queue.intersperse 0 (Queue.range 1 5))
+    (Queue.empty |> Queue.addMany [1;0;2;0;3;0;4;0;5])
+    "intersperse 4"
+
+Test.equal ((que [1;2;3])   < (que [1;2;3])) false "Comparision 1"
+Test.equal ((que [1;2;3])   < (que [2;2;3])) true  "Comparision 2"
+Test.equal ((que [2;2;3])   < (que [1;2;3])) false "Comparision 3"
+Test.equal ((que [1;2;3])   < (que [2;2]))   true  "Comparision 4"
+Test.equal ((que [1;2;3])   < (que [0;2]))   false "Comparision 5"
+Test.equal ((que [1;2])     < (que [2;2;3])) true  "Comparision 6"
+Test.equal ((que [1;2])     < (que [0;2;3])) false "Comparision 7"
+Test.equal ((que [1;2;3])   > (que [1;2;3])) false "Comparision 8"
+Test.equal ((que [1;2;3])   > (que [2;2;3])) false "Comparision 9"
+Test.equal ((que [2;2;3])   > (que [1;2;3])) true  "Comparision 10"
+Test.equal ((que [1;2;3])   > (que [2;2]))   false "Comparision 11"
+Test.equal ((que [1;2;3])   > (que [1;2]))   true  "Comparision 12"
+Test.equal ((que [1;2])     > (que [2;2;3])) false "Comparision 13"
+Test.equal ((que [1;2])     > (que [0;2;3])) true  "Comparision 14"
+Test.equal (Queue.empty     < Queue.empty)   false "Comparision 15"
+Test.equal (Queue.empty     > Queue.empty)   false "Comparision 16"
+Test.equal (Queue.empty     < Queue.one 1)   true  "Comparision 17"
+Test.equal (Queue.one 1     < Queue.empty)   false "Comparision 18"
+Test.equal (Queue.empty     > Queue.one 1)   false "Comparision 19"
+Test.equal (Queue.one 1     > Queue.empty)   true  "Comparision 20"
+Test.equal ((que ["A";"B"]) < que ["B";"A"]) true  "Comparision 21"
+Test.equal ((que ["B";"A"]) < que ["A";"B"]) false "Comparision 22"
+Test.equal ((que ["A";"B"]) > que ["B";"A"]) false "Comparision 23"
+Test.equal ((que ["B";"A"]) > que ["A";"B"]) true  "Comparision 24"
+
+Test.equal (Queue.compare (Queue.range 1 3) (Queue.range 2 6)) -1 "compare 1"
+Test.equal (Queue.compare (Queue.range 2 6) (Queue.range 1 3))  1 "compare 2"
+Test.equal (Queue.compare (Queue.range 1 3) (Queue.range 1 3))  0 "compare 3"
+
+let byStringLength str1 str2 =
+    LanguagePrimitives.GenericComparison (String.length str1) (String.length str2)
+
+Test.equal
+    (Queue.sortWith byStringLength (que ["Hallo";"Welt";"Du";"Sau"]))
+    (que ["Du";"Sau";"Welt";"Hallo"])
+    "sortWith 1"
+
+Test.equal
+    (Queue.sortWith byStringLength (que ["Hallo";"Welt";"Du";"Sau"]))
+    (Queue.sortBy   String.length  (que ["Hallo";"Welt";"Du";"Sau"]))
+    "sortWith 2"
+
+Test.equal
+    (Queue.sort (que ["Hallo";"Welt";"Du";"Sau"]))
+    (que ["Du";"Hallo";"Sau";"Welt"])
+    "sort 1"
+
+Test.equal
+    (Queue.sort (que [4;2;3;1;7;5;9;8;6;10]))
+    (Queue.range 1 10)
+    "sort 2"
+
+Test.equal
+    (Queue.sortDescending (Queue.range 1 10))
+    (Queue.rev (Queue.range 1 10))
+    "sortDescending 1"
+
+Test.equal
+    (Queue.sortDescending (que ["Hallo";"Welt";"Du";"Sau"]))
+    (que ["Welt";"Sau";"Hallo";"Du"])
+    "sortDescending 2"
+
+Test.equal
+    (Queue.sortDescending (que [4;2;3;1;7;5;9;8;6;10]))
+    (Queue.rev (Queue.range 1 10))
+    "sortDescending 3"
+
+Test.equal
+    (Queue.sortBy String.length (que ["Hallo";"Welt";"Du";"Sau"]))
+    (que ["Du";"Sau";"Welt";"Hallo"])
+    "sortBy 1"
+
+Test.equal
+    (Queue.sortByDescending String.length (que ["Hallo";"Welt";"Du";"Sau"]))
+    (que ["Hallo";"Welt";"Sau";"Du"])
+    "sortBy 2"
+
+Test.equal
+    (ValueOption.map (isFloat 5.5) (Queue.average (Queue.range 1.0 10.0)))
+    (ValueSome true)
+    "average 1"
+
+Test.equal
+    (Queue.average (Queue.range 1.0m 10.0m))
+    (ValueSome 5.5m)
+    "average 2"
+
+Test.equal
+    (Queue.average (Queue.rangeWithStep 0.0m 0.1m 1.0m))
+    (ValueSome 0.5m)
+    "average 3"
+
+Test.equal
+    (Queue.average (Queue.rangeWithStep 0.1m 0.1m 1.0m))
+    (ValueSome 0.55m)
+    "average 4"
+
+Test.equal
+    (Queue.average (Queue.one 1.0 |> Queue.tail))
+    (ValueNone)
+    "average 5"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()

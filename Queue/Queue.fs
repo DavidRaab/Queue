@@ -1,6 +1,6 @@
 namespace Queue
 
-[<CustomEquality;NoComparison>]
+[<CustomEquality;CustomComparison>]
 type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
     Queue of queue:list<'a> * added:list<'a> * length:int
 
@@ -55,6 +55,22 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
 
         override this.GetEnumerator(): System.Collections.IEnumerator =
             this.asSequence ()
+
+    interface System.IComparable with
+        override this.CompareTo(other:obj) =
+            match other with
+            | :? Queue<'a> as other ->
+                let rec loop (queue1:Queue<'a>) (queue2:Queue<'a>) =
+                    match queue1.Head (), queue2.Head () with
+                    | ValueNone  , ValueNone   ->  0
+                    | ValueSome _, ValueNone   ->  1
+                    | ValueNone  , ValueSome _ -> -1
+                    | ValueSome (x,q1), ValueSome (y,q2) ->
+                        match Unchecked.compare x y with
+                        | 0 -> loop q1 q2
+                        | x -> x
+                loop this other
+            | _ -> failwith "Boom"
 
 module Queue =
     // Creation of Queue
@@ -304,6 +320,9 @@ module Queue =
             then add x ts,       fs
             else       ts, add x fs
         ) (empty,empty) queue
+
+    let compare (queue1:Queue<'a>) (queue2:Queue<'a>) =
+        LanguagePrimitives.GenericComparison queue1 queue2
 
     let compareWith comparer queue1 queue2 =
         let rec loop queue1 queue2 =
@@ -599,6 +618,20 @@ module Queue =
                 | ValueSome x -> ValueSome x
         loop queue
 
+    let intersperse insert queue =
+        let rec loop target queue =
+            match head queue with
+            | ValueNone       -> target
+            | ValueSome (x,t) -> loop (add insert target |> add x) t
+        match head queue with
+        | ValueNone       -> empty
+        | ValueSome (x,t) -> loop (add x empty) t
+
+    let inline average queue =
+        match reduce (fun x y -> x + y) queue with
+        | ValueNone     -> ValueNone
+        | ValueSome sum -> ValueSome (LanguagePrimitives.DivideByInt sum (length queue))
+
     // Mappings
     let replicate = repeat
     let collect   = bind
@@ -616,8 +649,6 @@ module Queue =
             | ValueNone       -> ()
             | ValueSome (x,t) -> f idx x; loop (idx+1) t
         loop 0 queue
-
-    let id = 3
 
     // Converter
     let ofArray xs =
@@ -662,6 +693,24 @@ module Queue =
     let sort queue =
         let a = toArray queue
         Array.sortInPlace a
+        ofArray a
+
+    let sortDescending queue =
+        let a = toArray queue
+        ofArray (Array.sortDescending a)
+
+    let sortBy (projection:'a -> 'Key) queue =
+        let a = toArray queue
+        Array.sortInPlaceBy projection a
+        ofArray a
+
+    let sortByDescending (projection: 'a -> 'Key) queue =
+        let a = toArray queue
+        ofArray (Array.sortByDescending projection a)
+
+    let sortWith comparer queue =
+        let a = toArray queue
+        Array.sortInPlaceWith comparer a
         ofArray a
 
 #nowarn "60"
