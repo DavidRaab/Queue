@@ -825,6 +825,44 @@ Test.equal
     (ValueNone)
     "average 5"
 
+Test.equal
+    (Queue.sumBy snd (que [("A",1);("B",2);("C",3)]))
+    ((que [("A",1);("B",2);("C",3)]) |> Queue.map snd |> Queue.sum)
+    "sumBy"
+
+Test.equal (Queue.sumBy snd Queue.empty)   0 "sumBy on Empty 1"
+Test.equal (Queue.sumBy snd Queue.empty) 0.0 "sumBy on Empty 2"
+
+let r1t = Queue.range 1 10
+Test.equal (r1t.[5])        (ValueSome 6)                             "Indexer 1"
+Test.equal (r1t.[0])        (ValueSome 1)                             "Indexer 2"
+Test.equal (r1t.[10])       (ValueNone)                               "Indexer 3"
+Test.equal (r1t.[2..5])     (que [3;4;5;6])                           "GetSlice 1"
+Test.equal (r1t.[2..5])     (Queue.slice 2 5 r1t)                     "GetSlice 2"
+Test.equal (r1t.[2..])      (que [3;4;5;6;7;8;9;10])                  "GetSlice 3"
+Test.equal (r1t.[2..])      (Queue.slice 2 (Queue.lastIndex r1t) r1t) "GetSlice 4"
+Test.equal (r1t.[..3])      (que [1;2;3;4])                           "GetSlice 5"
+Test.equal (r1t.[..3])      (Queue.slice 0 3 r1t)                     "GetSlice 6"
+Test.equal (r1t.[*])        (r1t)                                     "GetSlice 7"
+Test.equal (r1t.[-2..(-1)]) (Queue.empty)                             "GetSlice 8"
+Test.equal (r1t.[-2..5])    (Queue.slice 0 5 r1t)                     "GetSlice 9"
+Test.equal (r1t.[-2..5])    (Queue.range 1 6)                         "GetSlice 10"
+
+Test.equal
+    (Queue.distinct (Queue.append (Queue.range 1 5) (Queue.range 1 5)))
+    (Queue.range 1 5)
+    "Distinct 1"
+
+Test.equal
+    (Queue.distinct (que [1;3;1;5;1;4;6;3;9;5;2]))
+    (que [1;3;5;4;6;9;2])
+    "Distinct 2"
+
+Test.equal
+    (Queue.distinctBy snd (Queue.zip (Queue.range 1 100) (que [1;3;1;5;1;4;6;3;9;5;2])))
+    (que [(1,1); (2,3); (4,5); (6,4); (7,6); (9,9); (11,2)])
+    "DistinctBy 1"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

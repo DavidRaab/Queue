@@ -238,7 +238,7 @@ module Queue =
             | ValueSome y -> ValueSome (max x y)
         fold folder ValueNone queue
 
-    let maxBy projection queue =
+    let maxBy (projection: 'a -> 'Key) queue =
         let folder state item =
             match state with
             | ValueNone                 -> ValueSome (projection item, item)
@@ -254,7 +254,7 @@ module Queue =
             | ValueSome y -> ValueSome (min x y)
         fold folder ValueNone queue
 
-    let minBy projection queue =
+    let minBy (projection: 'a -> 'Key) queue =
         let folder state item =
             match state with
             | ValueNone                 -> ValueSome (projection item, item)
@@ -424,6 +424,33 @@ module Queue =
                 else queue
         loop queue
 
+    let distinct queue =
+        let seen = System.Collections.Generic.Dictionary()
+        let mutable value = false
+        let rec loop newQ queue =
+            match head queue with
+            | ValueNone      -> newQ
+            | ValueSome(x,t) ->
+                value <- false
+                match seen.TryGetValue(x, &value) with
+                | true  ->                   loop newQ         t
+                | false -> seen.Add(x,true); loop (add x newQ) t
+        loop empty queue
+
+    let distinctBy (projection: 'a -> 'Key) queue =
+        let seen = System.Collections.Generic.Dictionary()
+        let mutable value = false
+        let rec loop newQ queue =
+            match head queue with
+            | ValueNone      -> newQ
+            | ValueSome(x,t) ->
+                let key = projection x
+                value <- false
+                match seen.TryGetValue(key, &value) with
+                | true  ->                     loop newQ         t
+                | false -> seen.Add(key,true); loop (add x newQ) t
+        loop empty queue
+
     let slice start stop queue =
         let lidx  = lastIndex queue
         let start = if start < 0   then 0    else start
@@ -523,9 +550,14 @@ module Queue =
         ValueOption.map (fun (x,t) -> fold folder x t) (head queue)
 
     let inline sum queue =
-        match reduce (+) queue with
-        | ValueNone   -> LanguagePrimitives.GenericZero<_>
-        | ValueSome x -> x
+        let folder acc x =
+            (acc: ^a) + x
+        fold folder LanguagePrimitives.GenericZero queue
+
+    let inline sumBy (projection: 'a -> ^b) queue =
+        let folder acc x =
+            (acc: ^b) + (projection x)
+        fold folder LanguagePrimitives.GenericZero queue
 
     let forall predicate queue =
         let rec loop q =
@@ -551,7 +583,7 @@ module Queue =
 
     let countBy (projection: 'a -> 'Key) queue =
         let dict = System.Collections.Generic.Dictionary()
-        let mutable count = Unchecked.defaultof<_>
+        let mutable count  = 0
         let rec loop queue =
             match head queue with
             | ValueNone       -> ()
@@ -715,5 +747,9 @@ module Queue =
 
 #nowarn "60"
 type Queue<'a> with
-    override q.ToString()      = sprintf "Queue %A" (Queue.toList q)
-    static member (++) (q1,q2) = Queue.append q1 q2
+    override q.ToString()            = sprintf "Queue %A" (Queue.toList q)
+    member this.Item with get(i:int) = Queue.item i this
+    member this.GetSlice(start,stop) =
+        let start,stop = defaultArg start 0, defaultArg stop (Queue.lastIndex this)
+        Queue.slice start stop this
+    static member (++) (q1,q2)       = Queue.append q1 q2
