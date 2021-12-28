@@ -32,13 +32,19 @@ let double x = x * 2
 let isEven x = x % 2 = 0
 let square x = x * x
 
-// Actual Tests
-let q123 = Queue.empty |> Queue.add 1 |> Queue.add 2 |> Queue.add 3
-let r123 = Queue.range 1 3
-Test.equal q123 r123 "add same as range"
+let isFloat x y =
+    (abs (x - y)) < 0.000001
 
-let r123' = Queue.append (que [10]) (Queue.range 1 3) |> Queue.tail
-Test.equal r123 r123' "append 1"
+// Actual Tests
+Test.equal
+    (Queue.empty |> Queue.add 1 |> Queue.add 2 |> Queue.add 3)
+    (Queue.range 1 3)
+    "add"
+
+Test.equal
+    (Queue.append (que [10]) (Queue.range 1 3) |> Queue.tail)
+    (Queue.range 1 3)
+    "append 1"
 
 Test.equal
     (Queue.append (Queue.one 1) (Queue.range 2 5))
@@ -49,9 +55,9 @@ Test.equal    (Queue.range 1 10) (Queue.range 1 10) "Two equal Queues"
 Test.notEqual (Queue.range 1 5)  (Queue.range 1 10) "None equal Queues"
 
 let q1t = Queue.range 1 10
-Test.equal    [1..10] [for x in q1t -> x] "Test for Expression 1"
-Test.equal    [1..10] [for x in q1t -> x] "Test for Expression 2"
-Test.notEqual [1..10] [for x in Queue.range 1  5 -> x] "Test notEqual for Expression"
+Test.equal    [1..10] [for x in q1t -> x] "Test Sequence Expression 1"
+Test.equal    [1..10] [for x in q1t -> x] "Test Sequence Expression 2"
+Test.notEqual [1..10] [for x in Queue.range 1 5 -> x] "Test notEqual for Expression"
 
 let q1to6 = Queue.range 1 6
 Test.ok    (Queue.contains  1 q1to6)   "Queue Contains 1"
@@ -112,19 +118,20 @@ Test.equal
     "Queue.map4"
 
 let cartesian =
-    que [1..5]  |> Queue.bind (fun x ->
-    que [10;20] |> Queue.bind (fun y ->
-        que [x * y]))
+    let cartesian =
+        que [1..5]  |> Queue.bind (fun x ->
+        que [10;20] |> Queue.bind (fun y ->
+            que [x * y]))
 
-Test.equal
-    cartesian
-    (que [10;20;20;40;30;60;40;80;50;100])
-    "Cartesian through bind"
+    Test.equal
+        cartesian
+        (que [10;20;20;40;30;60;40;80;50;100])
+        "Cartesian through bind"
 
-Test.equal
-    cartesian
-    (Queue.lift2 (fun x y -> x * y) (Queue.range 1 5) (que [10;20]))
-    "cartesian with Queue.lift2"
+    Test.equal
+        cartesian
+        (Queue.lift2 (fun x y -> x * y) (Queue.range 1 5) (que [10;20]))
+        "cartesian with Queue.lift2"
 
 Test.equal
     (Queue.concat (que [Queue.range 1 3; Queue.range 4 6; Queue.range 7 9]))
@@ -268,9 +275,6 @@ Test.equal
     (que [1;3;5;7;9])
     "rangeWithStep"
 
-let isFloat x y =
-    (abs (x - y)) < 0.000001
-
 Test.ok
     (Queue.forall (fun (x,y) -> isFloat x y)
         (Queue.zip
@@ -278,11 +282,13 @@ Test.ok
             (que [1.0;1.2;1.4;1.6;1.8;2.0;2.2])))
     "rangeWithStep float"
 
-let add4 x y z w = x + y + z + w
-Test.equal
-    (Queue.lift4 add4 (que [3;7]) (que [10;20]) (Queue.one 100) (que [1000;2000;3000]))
-    (que [1113;2113;3113;1123;2123;3123;1117;2117;3117;1127;2127;3127])
-    "lift4"
+let lift4 =
+    let add4 x y z w = x + y + z + w
+    Test.equal
+        (Queue.lift4 add4 (que [3;7]) (que [10;20]) (Queue.one 100) (que [1000;2000;3000]))
+        (que [1113;2113;3113;1123;2123;3123;1117;2117;3117;1127;2127;3127])
+        "lift4"
+    ()
 
 Test.equal
     (Queue.length (Queue.range 1 10))
@@ -370,7 +376,22 @@ Test.equal
 Test.equal
     (Queue.allPairs (que ["A";"B"]) (que [1;2]))
     (que ["A",1; "A",2; "B",1; "B",2])
-    "allPairs"
+    "allPairs 1"
+
+Test.equal
+    (Queue.allPairs (que ["A";"B"]) (que [1;2]))
+    (Queue.lift2 (fun x y -> x,y) (que ["A";"B"]) (que [1;2]))
+    "allPairs 2"
+
+Test.equal
+    (Queue.allPairs (que ["A";"B"]) (que [1;2]))
+    ((que ["A";"B"]) |> Queue.bind (fun l -> (que [1;2]) |> Queue.bind (fun n -> Queue.one (l,n))))
+    "allPairs 3"
+
+Test.equal
+    (Queue.allPairs (que ["A";"B"]) (que [1;2]))
+    (que [for l in que ["A";"B"] do for n in que [1;2] do yield l,n])
+    "allPairs 4"
 
 Test.equal
     (Queue.chunkBySize 3 (que [1..10]))
@@ -392,18 +413,19 @@ Test.equal
     (Queue.one (1,10,4) |> Queue.add (2,20,4))
     "Zip3"
 
-let nameOccurrences = Queue.countBy id (que ["Hallo";"Hallo";"Welt";"Hallo"])
-Test.equal
-    (Queue.find (fun (str,n) -> str = "Hallo") nameOccurrences)
-    (ValueSome ("Hallo", 3))
-    "CountBy 1"
+let countBy =
+    let nameOccurrences = Queue.countBy id (que ["Hallo";"Hallo";"Welt";"Hallo"])
+    Test.equal (Queue.length nameOccurrences) 2 "countBy 3"
 
-Test.equal
-    (Queue.find (fun (str,n) -> str = "Welt") nameOccurrences)
-    (ValueSome ("Welt", 1))
-    "CountBy 2"
+    Test.equal
+        (Queue.find (fun (str,n) -> str = "Hallo") nameOccurrences)
+        (ValueSome ("Hallo", 3))
+        "CountBy 1"
 
-Test.equal (Queue.length nameOccurrences) 2 "countBy 3"
+    Test.equal
+        (Queue.find (fun (str,n) -> str = "Welt") nameOccurrences)
+        (ValueSome ("Welt", 1))
+        "CountBy 2"
 
 Test.equal
     (Queue.rev (Queue.range 1 5))
@@ -608,20 +630,20 @@ Test.equal
 Test.equal (Queue.last (Queue.range 1 10)) (ValueSome 10) "last 1"
 Test.equal (Queue.last (Queue.empty))      (ValueNone)    "last 2"
 
+let compare =
+    let isGreater x y =
+        if   x = y then 0
+        elif x > y then 1
+        else -1
 
-let isGreater x y =
-    if   x = y then 0
-    elif x > y then 1
-    else -1
-
-Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 3))  0 "compareWith 1"
-Test.equal (Queue.compareWith isGreater (Queue.range 1 4) (Queue.range 1 3))  1 "compareWith 2"
-Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 4)) -1 "compareWith 3"
-Test.equal (Queue.compareWith isGreater (Queue.one 1)     (Queue.one 2))     -1 "compareWith 4"
-Test.equal (Queue.compareWith isGreater (Queue.one 2)     (Queue.one 1))      1 "compareWith 5"
-Test.equal (Queue.compareWith isGreater (que [2;1])       (que [1;2]))        1 "compareWith 6"
-Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [1;2;4]))     -1 "compareWith 7"
-Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [0;2;4;8]))    1 "compareWith 8"
+    Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 3))  0 "compareWith 1"
+    Test.equal (Queue.compareWith isGreater (Queue.range 1 4) (Queue.range 1 3))  1 "compareWith 2"
+    Test.equal (Queue.compareWith isGreater (Queue.range 1 3) (Queue.range 1 4)) -1 "compareWith 3"
+    Test.equal (Queue.compareWith isGreater (Queue.one 1)     (Queue.one 2))     -1 "compareWith 4"
+    Test.equal (Queue.compareWith isGreater (Queue.one 2)     (Queue.one 1))      1 "compareWith 5"
+    Test.equal (Queue.compareWith isGreater (que [2;1])       (que [1;2]))        1 "compareWith 6"
+    Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [1;2;4]))     -1 "compareWith 7"
+    Test.equal (Queue.compareWith isGreater (que [1;2;3])     (que [0;2;4;8]))    1 "compareWith 8"
 
 Test.equal
     (Queue.mapFilter add1 isEven (Queue.range 1 10))
@@ -674,9 +696,10 @@ Test.equal (Queue.repeat -5 0) (Queue.empty)     "repeat 3"
 Test.equal (Queue.repeat  5 0) (que [0;0;0;0;0]) "repeat 4"
 Test.equal (Queue.repeat  3 1) (que [1;1;1])     "repeat 5"
 
-let evens,odds = Queue.partition isEven (Queue.range 1 10)
-Test.ok (Queue.forall isEven          evens) "partition 1"
-Test.ok (Queue.forall (not << isEven)  odds) "partition 2"
+let partition =
+    let evens,odds = Queue.partition isEven (Queue.range 1 10)
+    Test.ok (Queue.forall isEven          evens) "partition 1"
+    Test.ok (Queue.forall (not << isEven)  odds) "partition 2"
 
 Test.equal (Queue.min (que [1;10;3])) (ValueSome 1)  "min 1"
 Test.equal (Queue.min Queue.empty)    (ValueNone)    "min 2"
@@ -833,20 +856,21 @@ Test.equal
 Test.equal (Queue.sumBy snd Queue.empty)   0 "sumBy on Empty 1"
 Test.equal (Queue.sumBy snd Queue.empty) 0.0 "sumBy on Empty 2"
 
-let r1t = Queue.range 1 10
-Test.equal (r1t.[5])        (ValueSome 6)                             "Indexer 1"
-Test.equal (r1t.[0])        (ValueSome 1)                             "Indexer 2"
-Test.equal (r1t.[10])       (ValueNone)                               "Indexer 3"
-Test.equal (r1t.[2..5])     (que [3;4;5;6])                           "GetSlice 1"
-Test.equal (r1t.[2..5])     (Queue.slice 2 5 r1t)                     "GetSlice 2"
-Test.equal (r1t.[2..])      (que [3;4;5;6;7;8;9;10])                  "GetSlice 3"
-Test.equal (r1t.[2..])      (Queue.slice 2 (Queue.lastIndex r1t) r1t) "GetSlice 4"
-Test.equal (r1t.[..3])      (que [1;2;3;4])                           "GetSlice 5"
-Test.equal (r1t.[..3])      (Queue.slice 0 3 r1t)                     "GetSlice 6"
-Test.equal (r1t.[*])        (r1t)                                     "GetSlice 7"
-Test.equal (r1t.[-2..(-1)]) (Queue.empty)                             "GetSlice 8"
-Test.equal (r1t.[-2..5])    (Queue.slice 0 5 r1t)                     "GetSlice 9"
-Test.equal (r1t.[-2..5])    (Queue.range 1 6)                         "GetSlice 10"
+let indexer =
+    let r1t = Queue.range 1 10
+    Test.equal (r1t.[5])        (ValueSome 6)                             "Indexer 1"
+    Test.equal (r1t.[0])        (ValueSome 1)                             "Indexer 2"
+    Test.equal (r1t.[10])       (ValueNone)                               "Indexer 3"
+    Test.equal (r1t.[2..5])     (que [3;4;5;6])                           "GetSlice 1"
+    Test.equal (r1t.[2..5])     (Queue.slice 2 5 r1t)                     "GetSlice 2"
+    Test.equal (r1t.[2..])      (que [3;4;5;6;7;8;9;10])                  "GetSlice 3"
+    Test.equal (r1t.[2..])      (Queue.slice 2 (Queue.lastIndex r1t) r1t) "GetSlice 4"
+    Test.equal (r1t.[..3])      (que [1;2;3;4])                           "GetSlice 5"
+    Test.equal (r1t.[..3])      (Queue.slice 0 3 r1t)                     "GetSlice 6"
+    Test.equal (r1t.[*])        (r1t)                                     "GetSlice 7"
+    Test.equal (r1t.[-2..(-1)]) (Queue.empty)                             "GetSlice 8"
+    Test.equal (r1t.[-2..5])    (Queue.slice 0 5 r1t)                     "GetSlice 9"
+    Test.equal (r1t.[-2..5])    (Queue.range 1 6)                         "GetSlice 10"
 
 Test.equal
     (Queue.distinct (Queue.append (Queue.range 1 5) (Queue.range 1 5)))
@@ -862,6 +886,24 @@ Test.equal
     (Queue.distinctBy snd (Queue.zip (Queue.range 1 100) (que [1;3;1;5;1;4;6;3;9;5;2])))
     (que [(1,1); (2,3); (4,5); (6,4); (7,6); (9,9); (11,2)])
     "DistinctBy 1"
+
+// GroupBy
+let groupBy =
+    let gb          = Queue.groupBy String.length (que ["Hallo";"Welt";"Wie";"Geht";"Es";"Dir";"Jetzt?"])
+    let getLength i = fun (x,_) -> i = x
+
+    Test.equal (Queue.length gb)            5                                     "groubBy 1"
+    Test.equal (Queue.find (getLength 2) gb) (ValueSome (2, que ["Es"]))          "groupBy 2"
+    Test.equal (Queue.find (getLength 3) gb) (ValueSome (3, que ["Wie";"Dir"]))   "groubBy 3"
+    Test.equal (Queue.find (getLength 4) gb) (ValueSome (4, que ["Welt";"Geht"])) "groubBy 4"
+    Test.equal (Queue.find (getLength 5) gb) (ValueSome (5, que ["Hallo"]))       "groubBy 5"
+    Test.equal (Queue.find (getLength 6) gb) (ValueSome (6, que ["Jetzt?"]))      "groubBy 6"
+
+Test.equal
+    (ValueOption.map (isFloat 3.0) (Queue.averageBy snd (que ["A",1.0; "B",3.0; "C",5.0])))
+    (ValueSome true)
+    "averageBy"
+
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()

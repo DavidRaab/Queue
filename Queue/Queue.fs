@@ -598,6 +598,25 @@ module Queue =
             add (key,value) queue
         ) empty dict
 
+    let groupBy (projection: 'a -> 'Key) queue =
+        let dict = System.Collections.Generic.Dictionary()
+
+        let mutable q = empty
+        let rec loop queue =
+            match head queue with
+            | ValueNone       -> ()
+            | ValueSome (x,t) ->
+                let key = projection x
+                match dict.TryGetValue(key, &q) with
+                | false -> dict.Add(key, one x)
+                | true  -> dict.[key] <- add x q
+                loop t
+        loop queue
+
+        Seq.fold (fun queue (KeyValue (key,value)) ->
+            add (key,value) queue
+        ) empty dict
+
     let exactlyOne queue =
         match head queue with
         | ValueNone       -> ValueNone
@@ -663,6 +682,15 @@ module Queue =
         match reduce (fun x y -> x + y) queue with
         | ValueNone     -> ValueNone
         | ValueSome sum -> ValueSome (LanguagePrimitives.DivideByInt sum (length queue))
+
+    let inline averageBy mapper queue =
+        match head queue with
+        | ValueNone         -> ValueNone
+        | ValueSome (acc,t) ->
+            ValueSome
+                (LanguagePrimitives.DivideByInt
+                    (fold (fun acc x -> acc + (mapper x)) (mapper acc) t)
+                    (length t + 1))
 
     // Mappings
     let replicate = repeat
