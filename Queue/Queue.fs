@@ -80,6 +80,9 @@ module Queue =
     let add x (Queue (q,r,l)) =
         queue q (x::r) (l+1)
 
+    let prepend x (Queue (q,r,l)) =
+        queue (x::q) r (l+1)
+
     let one x =
         add x empty
 
@@ -317,6 +320,11 @@ module Queue =
         let folder (idx,q) x =
             idx+1, add (f idx x) q
         snd (fold folder (0,empty) queue)
+
+    let mapi2 f queue1 queue2 =
+        let folder (idx,q) x y =
+            idx+1, add (f idx x y) q
+        snd (fold2 folder (0,empty) queue1 queue2)
 
     let lift2 f queue1 queue2 =
         queue1 |> bind (fun x1 ->
@@ -710,6 +718,26 @@ module Queue =
                 (LanguagePrimitives.DivideByInt
                     (fold (fun acc x -> acc + (mapper x)) (mapper acc) t)
                     (length t + 1))
+
+    let pairwise queue =
+        zip queue (tail queue)
+
+    let rec permutations queue =
+        let between insert queue = seq {
+            for i=0 to length queue do
+                yield insertAt i insert queue
+        }
+
+        match length queue with
+        | 0 -> Seq.empty
+        | 1 -> seq { queue }
+        | _ ->
+            match head queue with
+            | ValueNone           -> failwith "Cannot happen"
+            | ValueSome (x,queue) -> seq {
+                for q in permutations queue do
+                    yield! between x q
+            }
 
     // Mappings
     let replicate = repeat

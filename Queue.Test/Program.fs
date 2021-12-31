@@ -955,6 +955,53 @@ let iteri2 =
         (Queue.rev (Queue.ofList xs))
         "iteri2"
 
+Test.equal
+    (Queue.mapi2 (fun  idx  x y   -> idx, x+y)                           (Queue.range 10 20) (Queue.range 20 25))
+    (Queue.map   (fun (idx,(x,y)) -> idx, x+y) (Queue.indexed (Queue.zip (Queue.range 10 20) (Queue.range 20 25))))
+    "mapi2"
+
+Test.equal
+    (Queue.pairwise (Queue.range 1 5))
+    (que [(1,2); (2,3); (3,4); (4,5)])
+    "pairwise 1"
+
+Test.equal
+    (Queue.pairwise (Queue.range 1 10))
+    (Queue.zip (Queue.range 1 10) (Queue.tail (Queue.range 1 10)))
+    "pairwise 2"
+
+Test.equal
+    (Queue.pairwise Queue.empty)
+    (Queue.empty)
+    "pairwise 3"
+
+Test.equal
+    (Queue.pairwise (Queue.one 1))
+    (Queue.empty)
+    "pairwise 4"
+
+Test.equal
+    (Queue.ofList (1  :: 2 :: 3 :: []))
+    (Queue.prepend 1 (Queue.prepend 2 (Queue.prepend 3 Queue.empty)))
+    "prepend 1"
+
+Test.equal
+    (Queue.ofList (List.fold (fun state x -> x :: state) [] [1..10]))
+    (Queue.fold (fun state x -> Queue.prepend x state) Queue.empty (Queue.range 1 10))
+    "prepend 2"
+
+let permuts =
+    let permuts = Queue.permutations (Queue.range 1 3)
+
+    Test.equal (Seq.length permuts) 6                    "permuts 1"
+    Test.equal (Seq.contains (que [1;2;3]) permuts) true "permuts 2"
+    Test.equal (Seq.contains (que [1;3;2]) permuts) true "permuts 3"
+    Test.equal (Seq.contains (que [2;1;3]) permuts) true "permuts 4"
+    Test.equal (Seq.contains (que [2;3;1]) permuts) true "permuts 5"
+    Test.equal (Seq.contains (que [3;1;2]) permuts) true "permuts 6"
+    Test.equal (Seq.contains (que [3;2;1]) permuts) true "permuts 7"
+
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
