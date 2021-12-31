@@ -157,13 +157,6 @@ module Queue =
             | ValueSome (x,t) -> loop (f state x) t
         loop state queue
 
-    let scan f (state:'State) queue =
-        let rec loop state states queue =
-            match head queue with
-            | ValueNone       -> add state states
-            | ValueSome (x,t) -> loop (f state x) (add state states) t
-        loop state empty queue
-
     let fold2 f (state:'State) queue1 queue2 =
         let rec loop state q1 q2 =
             match head q1, head q2 with
@@ -172,6 +165,20 @@ module Queue =
             | ValueSome _      , ValueNone         -> state
             | ValueSome (x1,q1), ValueSome (x2,q2) -> loop (f state x1 x2) q1 q2
         loop state queue1 queue2
+
+    let fold3 f (state: 'State) queue1 queue2 queue3 =
+        let rec loop state q1 q2 q3 =
+            match head q1, head q2, head q3 with
+            | ValueSome (x1, q1), ValueSome (x2, q2), ValueSome (x3, q3) -> loop (f state x1 x2 x3) q1 q2 q3
+            | _ -> state
+        loop state queue1 queue2 queue3
+
+    let scan f (state:'State) queue =
+        let rec loop state states queue =
+            match head queue with
+            | ValueNone       -> add state states
+            | ValueSome (x,t) -> loop (f state x) (add state states) t
+        loop state empty queue
 
     let foldBack f q (state:'State) =
         let rec loop state q =
@@ -270,6 +277,18 @@ module Queue =
         fold (fun (idx,state) x ->
             (idx+1, f idx state x)
         ) (0,state) queue
+        |> snd
+
+    let fold2i f (state:'State) queue1 queue2 =
+        fold2 (fun (idx,state) x1 x2 ->
+            (idx+1, f idx state x1 x2)
+        ) (0,state) queue1 queue2
+        |> snd
+
+    let fold3i f (state:'State) queue1 queue2 queue3 =
+        fold3 (fun (idx,state) x1 x2 x3 ->
+            (idx+1, f idx state x1 x2 x3)
+        ) (0,state) queue1 queue2 queue3
         |> snd
 
     let mapFilter mapper predicate queue =
@@ -542,7 +561,7 @@ module Queue =
         fold2 (fun q x y -> add (x,y) q) empty queue1 queue2
 
     let zip3 queue1 queue2 queue3 =
-        fold2 (fun q (x,y) z -> add (x,y,z) q) empty (zip queue1 queue2) queue3
+        fold3 (fun q x y z -> add (x,y,z) q) empty queue1 queue2 queue3
 
     let reduce reducer queue =
         let folder state x =
@@ -594,13 +613,13 @@ module Queue =
                 | true  -> dict.[key] <- count + 1
                 loop t
         loop queue
+
         Seq.fold (fun queue (KeyValue (key,value)) ->
             add (key,value) queue
         ) empty dict
 
     let groupBy (projection: 'a -> 'Key) queue =
         let dict = System.Collections.Generic.Dictionary()
-
         let mutable q = empty
         let rec loop queue =
             match head queue with
@@ -700,15 +719,29 @@ module Queue =
     // Side-Effects
     let rec iter f queue =
         match head queue with
-        | ValueNone       -> ()
         | ValueSome (h,t) -> f h; iter f t
+        | ValueNone       -> ()
+
+    let rec iter2 f queue1 queue2 =
+        match head queue1, head queue2 with
+        | ValueSome (x1,q1), ValueSome(x2,q2) -> f x1 x2; iter2 f q1 q2
+        | _                                   -> ()
 
     let iteri f queue =
         let rec loop idx queue =
             match head queue with
-            | ValueNone       -> ()
             | ValueSome (x,t) -> f idx x; loop (idx+1) t
+            | ValueNone       -> ()
         loop 0 queue
+
+    let iteri2 f queue1 queue2 =
+        let rec loop idx q1 q2 =
+            match head q1, head q2 with
+            | ValueSome (x1,q1), ValueSome (x2,q2) -> f idx x1 x2; loop (idx+1) q1 q2
+            | ValueSome _, ValueNone   -> ()
+            | ValueNone  , ValueSome _ -> ()
+            | ValueNone  , ValueNone   -> ()
+        loop 0 queue1 queue2
 
     // Converter
     let ofArray xs =

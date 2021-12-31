@@ -902,8 +902,58 @@ let groupBy =
 Test.equal
     (ValueOption.map (isFloat 3.0) (Queue.averageBy snd (que ["A",1.0; "B",3.0; "C",5.0])))
     (ValueSome true)
-    "averageBy"
+    "averageBy 1"
 
+Test.equal
+    (Queue.averageBy snd (que ["A",1.0m; "B",3.0m; "C",5.0m]))
+    (ValueSome 3.0m)
+    "averageBy 2"
+
+Test.equal
+    (Queue.fold2i (fun i state x y -> Queue.add (i,x,y) state) Queue.empty (Queue.range 1 6) (Queue.range 10 15))
+    (que [(0,1,10); (1,2,11); (2,3,12); (3,4,13); (4,5,14); (5,6,15)])
+    "fold2i 1"
+
+Test.equal
+    (Queue.fold2i (fun i state x y -> Queue.add (i, x+y) state) Queue.empty (Queue.range 1 3) (Queue.range 10 15))
+    (que [(0,11); (1,13); (2,15)])
+    "fold2i 2"
+
+Test.equal
+    (Queue.ofList (Queue.fold3i (fun i state x y z -> (i,z,(x+y)) :: state) [] (Queue.range 1 3) (que [10;10]) (que ["A";"B";"C"])))
+    (Queue.empty |> Queue.add (1,"B",12) |> Queue.add (0,"A",11))
+    "fold3i 1"
+
+Test.equal
+    (Queue.ofList (List.fold  (fun l x -> x :: l)        []          [1..10]))
+    (Queue.rev    (Queue.fold (fun q x -> Queue.add x q) Queue.empty (Queue.range 1 10)))
+    "Behaviour Queue vs List"
+
+let iter =
+    let mutable xs = []
+    Queue.iter (fun x -> xs <- x :: xs) (Queue.range 1 10)
+    Test.equal xs (List.rev [1..10]) "iter"
+
+let iter2 =
+    let mutable xs = []
+    Queue.iter2 (fun x y -> xs <- (x,y) :: xs) (Queue.range 1 3) (Queue.range 10 100)
+    Test.equal xs [(3,12); (2,11); (1,10)] "iter2"
+
+let iteri =
+    let mutable xs = []
+    Queue.iteri (fun i x -> xs <- (i,x*2) :: xs) (Queue.range 1 5)
+    Test.equal
+        (Queue.range 1 5 |> Queue.map (fun x -> x*2) |> Queue.indexed)
+        (Queue.rev (Queue.ofList xs))
+        "iteri"
+
+let iteri2 =
+    let mutable xs = []
+    Queue.iteri2 (fun i x y -> xs <- (i,x+y) :: xs) (Queue.range 1 3) (Queue.range 100 200)
+    Test.equal
+        ((Queue.indexed (Queue.zip (Queue.range 1 3) (Queue.range 100 200))) |> Queue.map (fun (i,(x,y)) -> (i,x+y)))
+        (Queue.rev (Queue.ofList xs))
+        "iteri2"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
