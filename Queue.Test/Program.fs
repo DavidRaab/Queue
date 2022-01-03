@@ -1059,6 +1059,11 @@ Test.equal (Queue.removeManyAt  0  0 (Queue.range 1 10)) (Queue.range 1 10)     
 Test.equal (Queue.removeManyAt  2 -3 (Queue.range 1 10)) (Queue.range 1 10)         "removeManyAt 4"
 Test.equal (Queue.removeManyAt  2  3 (Queue.range 1 10)) (que [1;2] ++ que [6..10]) "removeManyAt 5"
 
+Test.equal
+    (Queue.scanBack (+) (que ["A";"B";"C"]) "")
+    (que [""; "C"; "BC"; "ABC"])
+    "scanBack 1"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

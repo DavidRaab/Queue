@@ -150,23 +150,21 @@ module Queue =
 
     let tail queue =
         match head queue with
-        | ValueNone       -> empty
         | ValueSome (h,t) -> t
+        | ValueNone       -> empty
 
     let fold f (state:'State) queue =
         let rec loop state queue =
             match head queue with
-            | ValueNone       -> state
             | ValueSome (x,t) -> loop (f state x) t
+            | ValueNone       -> state
         loop state queue
 
     let fold2 f (state:'State) queue1 queue2 =
         let rec loop state q1 q2 =
             match head q1, head q2 with
-            | ValueNone        , ValueNone         -> state
-            | ValueNone        , ValueSome _       -> state
-            | ValueSome _      , ValueNone         -> state
             | ValueSome (x1,q1), ValueSome (x2,q2) -> loop (f state x1 x2) q1 q2
+            | _                                    -> state
         loop state queue1 queue2
 
     let fold3 f (state: 'State) queue1 queue2 queue3 =
@@ -177,11 +175,10 @@ module Queue =
         loop state queue1 queue2 queue3
 
     let scan f (state:'State) queue =
-        let rec loop state states queue =
-            match head queue with
-            | ValueNone       -> add state states
-            | ValueSome (x,t) -> loop (f state x) (add state states) t
-        loop state empty queue
+        let folder (state,states) x =
+            let newState = f state x
+            (newState, add newState states)
+        snd (fold folder (state,one state) queue)
 
     let foldBack f q (state:'State) =
         let rec loop state q =
@@ -190,6 +187,12 @@ module Queue =
             | Queue(q ,[]  ,l) -> loop state (queue [] (List.rev q) l)
             | Queue(q ,x::a,l) -> loop (f x state) (queue q a (l-1))
         loop state q
+
+    let scanBack f queue (state:'State) =
+        let folder x (state,states) =
+            let newState = f x state
+            (newState, add newState states)
+        snd (foldBack folder queue (state,one state))
 
     let apply fq xq =
         let rec loop fq xq state =
