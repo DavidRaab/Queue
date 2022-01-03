@@ -1001,6 +1001,63 @@ let permuts =
     Test.equal (Seq.contains (que [3;1;2]) permuts) true "permuts 6"
     Test.equal (Seq.contains (que [3;2;1]) permuts) true "permuts 7"
 
+let permute =
+    let xs = [1..10]
+    let qs = Queue.ofList xs
+
+    let rightShiftBy x = fun i -> (i+x) % 10
+
+    Test.equal
+        (Queue.permute (rightShiftBy 1) qs)
+        (ValueSome (Queue.ofList (List.permute (rightShiftBy 1) xs)))
+        "permute 1"
+
+    Test.equal
+        (Queue.permute (rightShiftBy 3) qs)
+        (ValueSome (Queue.ofList (List.permute (rightShiftBy 3) xs)))
+        "permute 2"
+
+    Test.equal
+        (Queue.permute (rightShiftBy 5) qs)
+        (ValueSome (Queue.ofList (List.permute (rightShiftBy 5) xs)))
+        "permute 3"
+
+    Test.equal
+        (Queue.permute (rightShiftBy 7) qs)
+        (ValueSome (Queue.ofList (List.permute (rightShiftBy 7) xs)))
+        "permute 4"
+
+    Test.equal
+        (Queue.permute (rightShiftBy 9) qs)
+        (ValueSome (Queue.ofList (List.permute (rightShiftBy 9) xs)))
+        "permute 5"
+
+    Test.equal
+        (Queue.permute (rightShiftBy 10) qs)
+        (ValueSome (Queue.ofList (List.permute id xs)))
+        "permute 6"
+
+    Test.equal
+        (Queue.permute (fun i -> i + 1) qs)
+        ValueNone
+        "permute 7"
+
+Test.equal
+    (Queue.reduceBack (+) (que ["A";"B";"C"]))
+    (ValueSome "ABC")
+    "reduceBack 1"
+
+Test.equal (Queue.removeAt  0 (Queue.range 1  2)) (Queue.one 2)                         "removeAt 1"
+Test.equal (Queue.removeAt 10 (Queue.range 1  5)) (Queue.range 1 5)                     "removeAt 2"
+Test.equal (Queue.removeAt  5 (Queue.range 1 10)) (Queue.range 1 5 ++ Queue.range 7 10) "removeAt 3"
+Test.equal (Queue.removeAt -3 (Queue.range 1  5)) (Queue.addMany [1..5] Queue.empty)    "removeAt 4"
+Test.equal (Queue.removeAt 20 (Queue.range 1  5)) (Queue.range 1 5)                     "removeAt 5"
+
+Test.equal (Queue.removeManyAt  0  3 (Queue.range 1 10)) (Queue.range 4 10)         "removeManyAt 1"
+Test.equal (Queue.removeManyAt -2  3 (Queue.range 1 10)) (Queue.range 1 10)         "removeManyAt 2"
+Test.equal (Queue.removeManyAt  0  0 (Queue.range 1 10)) (Queue.range 1 10)         "removeManyAt 3"
+Test.equal (Queue.removeManyAt  2 -3 (Queue.range 1 10)) (Queue.range 1 10)         "removeManyAt 4"
+Test.equal (Queue.removeManyAt  2  3 (Queue.range 1 10)) (que [1;2] ++ que [6..10]) "removeManyAt 5"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()

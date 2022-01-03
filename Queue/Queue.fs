@@ -576,6 +576,11 @@ module Queue =
             reducer state x
         ValueOption.map (fun (x,t) -> fold folder x t) (head queue)
 
+    let reduceBack reducer queue =
+        let folder state x =
+            reducer x state
+        ValueOption.map (fun (x,t) -> fold folder x t) (head (rev queue))
+
     let inline sum queue =
         let folder acc x =
             (acc: ^a) + x
@@ -722,6 +727,26 @@ module Queue =
     let pairwise queue =
         zip queue (tail queue)
 
+    let permute indexMap queue =
+        let length = length queue
+        let source = [| for x in queue -> x |]
+        let result = Array.zeroCreate length
+        let setted = Array.create length 0uy
+
+        let rec fromTo i stop =
+            let idx = indexMap i
+            if idx < 0 || idx >= length then
+                ()
+            else
+                result.[idx] <- source.[i]
+                setted.[idx] <- 1uy
+                if i < stop then fromTo (i+1) stop
+        fromTo 0 (length-1)
+
+        if Array.contains 0uy setted
+        then ValueNone
+        else ValueSome (Array.fold (fun q x -> add x q) empty result)
+
     let rec permutations queue =
         let between insert queue = seq {
             for i=0 to length queue do
@@ -739,10 +764,27 @@ module Queue =
                     yield! between x q
             }
 
+    let removeAt index queue =
+        if index < 0 || index > lastIndex queue
+        then queue
+        else
+            append
+                (slice 0         (index-1)         queue)
+                (slice (index+1) (lastIndex queue) queue)
+
+    let removeManyAt index count queue =
+        if index < 0 || index > lastIndex queue || count <= 0
+        then queue
+        else
+            append
+                (slice 0             (index-1)         queue)
+                (slice (index+count) (lastIndex queue) queue)
+
     // Mappings
     let replicate = repeat
     let collect   = bind
     let exists    = any
+    let singleton = one
 
     // Side-Effects
     let rec iter f queue =
