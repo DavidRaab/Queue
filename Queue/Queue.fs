@@ -115,12 +115,18 @@ module Queue =
         ) 0
 
     let inline range start stop =
-        if stop < start then
-            empty
+        if start = stop then
+            one start
+        elif start < stop then
+            start |> unfold (fun x ->
+                if   x <= stop
+                then ValueSome (x, x+LanguagePrimitives.GenericOne)
+                else ValueNone
+            )
         else
             start |> unfold (fun x ->
-                if x <= stop
-                then ValueSome (x, x+LanguagePrimitives.GenericOne)
+                if   x >= stop
+                then ValueSome (x, x-LanguagePrimitives.GenericOne)
                 else ValueNone
             )
 

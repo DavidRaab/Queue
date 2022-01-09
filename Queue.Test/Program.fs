@@ -80,19 +80,19 @@ Test.equal intern (ValueSome (4,que [5;6;7;8;9])) "Queue.head"
 
 let q13 = Queue.range 1 3
 
-Test.equal (Queue.toSeq   q1to6 |> Seq.toList) [1;2;3;4;5;6] "Queue.toSeq"
-Test.equal (List.ofSeq    q1to6) [1;2;3;4;5;6]     "List.ofSeq"
-Test.equal (Queue.toArray q1to6) [|1;2;3;4;5;6|]   "Queue.toArray"
-Test.equal (Queue.toList  q1to6) [1;2;3;4;5;6]     "Queue.toList 2"
-Test.equal (Queue.ofSeq   (seq [1;2;3])) q13 "Queue.ofSeq"
-Test.equal (Queue.ofArray [|1;2;3|])     q13 "Queue.ofArray"
-Test.equal (Queue.ofList [1;2;3])        q13 "Queue.ofList"
-Test.equal (Queue.take -3 q13) Queue.empty   "Queue.take -3"
-Test.equal (Queue.take  2 q13) (que [1;2])   "Queue.take 2"
-Test.equal (Queue.take  5 q13) q13           "Queue.take 5"
-Test.equal (Queue.skip -3 q13) q13           "Queue.skip -3"
-Test.equal (Queue.skip  2 q13) (que [3])     "Queue.skip 2"
-Test.equal (Queue.skip  5 q13) (Queue.empty) "Queue.skip 5"
+Test.equal (Queue.toSeq   q1to6 |> Seq.toList) [1;2;3;4;5;6]  "Queue.toSeq"
+Test.equal (List.ofSeq    q1to6)               [1;2;3;4;5;6]  "List.ofSeq"
+Test.equal (Queue.toArray q1to6)              [|1;2;3;4;5;6|] "Queue.toArray"
+Test.equal (Queue.toList  q1to6)               [1;2;3;4;5;6]  "Queue.toList 2"
+Test.equal (Queue.ofSeq   (seq [1;2;3]))       q13            "Queue.ofSeq"
+Test.equal (Queue.ofArray [|1;2;3|])           q13            "Queue.ofArray"
+Test.equal (Queue.ofList [1;2;3])              q13            "Queue.ofList"
+Test.equal (Queue.take -3 q13)                 Queue.empty    "Queue.take -3"
+Test.equal (Queue.take  2 q13)                (que [1;2])     "Queue.take 2"
+Test.equal (Queue.take  5 q13)                 q13            "Queue.take 5"
+Test.equal (Queue.skip -3 q13)                 q13            "Queue.skip -3"
+Test.equal (Queue.skip  2 q13)                (que [3])       "Queue.skip 2"
+Test.equal (Queue.skip  5 q13)                (Queue.empty)   "Queue.skip 5"
 Test.equal (Queue.updateAt 3 10   (Queue.ofSeq [1..10])) (que [1;2;3;10;5;6;7;8;9;10]) "Queue.updateAt 3 10"
 Test.equal (Queue.updateAt 100 10 (Queue.range 1 10))    (Queue.range 1 10)            "Queue.updateAt 100 10"
 Test.equal (Queue.updateAt -5 10  (Queue.range 1 10))    (Queue.range 1 10)            "Queue.updateAt -5 10"
@@ -136,27 +136,27 @@ let cartesian =
 Test.equal
     (Queue.concat (que [Queue.range 1 3; Queue.range 4 6; Queue.range 7 9]))
     (Queue.range 1 9)
-    "Queue.concat"
+    "concat"
 
 Test.equal
     (Queue.init 5 double)
     (Queue.range 0 4 |> Queue.map double)
-    "Queue.init"
+    "init"
 
 Test.equal
     (Queue.indexed (que ["A";"B";"C"]))
     (que [(0,"A"); (1,"B"); (2,"C")])
-    "Queue.indexed"
+    "indexed"
 
 Test.equal
     (Queue.indexed (que ["A";"B";"C"]))
     (Queue.zip (Queue.range 0 2) (que ["A";"B";"C"]))
-    "Queue.indexed 2"
+    "indexed 2"
 
 Test.equal
     (Queue.isEmpty (Queue.skip 2 (que [1;2])))
     true
-    "Queue.isEmpty"
+    "isEmpty"
 
 Test.equal (Queue.item  3 (que [1..10])) (ValueSome 4) "item 3"
 Test.equal (Queue.item -2 (que [1..10])) ValueNone     "item -2"
@@ -173,12 +173,12 @@ let squareEven x =
 Test.equal
     (Queue.choose evenSquare (que [1..10]))
     (que [4;16;36;64;100])
-    "Queue.choose"
+    "choose"
 
 Test.equal
     (Queue.choose evenSquare (que [1..10]))
     (Queue.filterMap isEven square (Queue.range 1 10))
-    "Queue.choose vs Queue.filterMap"
+    "choose vs filterMap"
 
 Test.equal
     (Queue.choose squareEven (Queue.range 1 10))
@@ -188,17 +188,17 @@ Test.equal
 Test.equal
     (Queue.range 1 10 |> Queue.filter isEven |> Queue.map square)
     (Queue.filterMap isEven square (Queue.range 1 10))
-    "filter->map vs Queue.filterMap"
+    "filter->map vs filterMap"
 
 Test.equal
     (Queue.range 1 10 |> Queue.map square |> Queue.filter isEven)
     (Queue.mapFilter square isEven (Queue.range 1 10))
-    "map->filter vs Queue.mapFilter"
+    "map->filter vs mapFilter"
 
 Test.equal
     (Queue.zip (que ["A";"B";"C";"D"]) (que [1;2;3]))
     (que ["A",1; "B",2; "C",3])
-    "Queue.zip"
+    "zip"
 
 Test.equal
     (Queue.reduce (+) (que [1..5]))
@@ -269,6 +269,13 @@ Test.equal
     (Queue.range 1 10 |> Queue.length)
     10
     "range length"
+
+Test.equal (Queue.range 1 10)    (Queue.ofList [1..10])            "range 1"
+Test.equal (Queue.range 10 1)    (Queue.ofList (List.rev [1..10])) "range 2"
+Test.equal (Queue.range 10 1)    (Queue.rangeWithStep 10 -1 1)     "range 4"
+Test.equal (Queue.range 10 1)    (Queue.ofList [10..-1..1])        "range 5"
+Test.equal (Queue.range 10 10)   (Queue.ofList [10..10])           "range 6"
+Test.notEqual (Queue.range 10 1) (Queue.ofList [10..1])            "range 7"
 
 Test.equal
     (Queue.rangeWithStep 1 2 10)
