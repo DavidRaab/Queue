@@ -10,14 +10,15 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
         length
 
     member this.Head () =
-        match this with
-        | Queue([] ,[],_)  -> ValueNone
-        | Queue([x],[],1)  -> ValueSome (x,Queue([],[],0))
-        | Queue([] ,[x],1) -> ValueSome (x,Queue([],[],0))
-        | Queue([] ,r,l)   ->
+        let (Queue (q,a,amount)) = this
+        match q,a,amount with
+        | [] ,[],_  -> ValueNone
+        | [x],[],1  -> ValueSome (x,Queue([],[],0))
+        | [] ,[x],1 -> ValueSome (x,Queue([],[],0))
+        | [] ,r,l   ->
             let newQ = List.rev r
             ValueSome (List.head newQ, Queue((List.tail newQ),[],(l-1)))
-        | Queue(q,a,l)   ->
+        | q,a,l   ->
             ValueSome (List.head q,    Queue((List.tail q),a,(l-1)))
 
     override this.Equals obj =
@@ -36,7 +37,7 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
 
     override this.GetHashCode () = Unchecked.hash this
 
-    member private this.asSequence () =
+    member private this.getEnumerator () =
         let mutable queue   = this
         let mutable current = Unchecked.defaultof<_>
         { new System.Collections.Generic.IEnumerator<'a> with
@@ -59,10 +60,10 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
 
     interface System.Collections.Generic.IEnumerable<'a> with
         override this.GetEnumerator(): System.Collections.Generic.IEnumerator<'a> =
-            this.asSequence ()
+            this.getEnumerator ()
 
         override this.GetEnumerator(): System.Collections.IEnumerator =
-            this.asSequence ()
+            this.getEnumerator ()
 
     interface System.IComparable with
         override this.CompareTo(other:obj) =
@@ -98,7 +99,7 @@ module Queue =
         Seq.fold (fun q x -> prepend x q) queue xs
 
     let one x =
-        add x empty
+        Queue ([],[x],1)
 
     let unfold generator (state:'State) =
         let rec loop q state =
@@ -333,13 +334,28 @@ module Queue =
     let concat queues = bind id queues
 
     let map2 f queue1 queue2 =
-        apply (map f queue1) queue2
+        let rec loop newQ q1 q2 =
+            match head q1, head q2 with
+            | ValueSome (x1,q1), ValueSome (x2,q2) ->
+                loop (add (f x1 x2) newQ) q1 q2
+            | _ -> newQ
+        loop empty queue1 queue2
 
     let map3 f queue1 queue2 queue3 =
-        apply (map2 f queue1 queue2) queue3
+        let rec loop newQ q1 q2 q3 =
+            match head q1, head q2, head q3 with
+            | ValueSome (x1,q1), ValueSome (x2,q2), ValueSome (x3,q3) ->
+                loop (add (f x1 x2 x3) newQ) q1 q2 q3
+            | _ -> newQ
+        loop empty queue1 queue2 queue3
 
     let map4 f queue1 queue2 queue3 queue4 =
-        apply (map3 f queue1 queue2 queue3) queue4
+        let rec loop newQ q1 q2 q3 q4 =
+            match head q1, head q2, head q3, head q4 with
+            | ValueSome (x1,q1), ValueSome (x2,q2), ValueSome (x3,q3), ValueSome (x4,q4) ->
+                loop (add (f x1 x2 x3 x4) newQ) q1 q2 q3 q4
+            | _ -> newQ
+        loop empty queue1 queue2 queue3 queue4
 
     let mapi f queue =
         let folder (idx,q) x =

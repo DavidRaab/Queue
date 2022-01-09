@@ -113,6 +113,11 @@ Test.equal
     "map2"
 
 Test.equal
+    (Queue.map3 (fun x y z -> x + y + z) (Queue.range 1 3) (Queue.range 3 1) (Queue.repeat 3 6))
+    (Queue.repeat 3 10)
+    "map3"
+
+Test.equal
     (Queue.map4 (fun a b c d -> a + b + c + d) (que [1;2]) (que [10;11]) (que [5;5;4;12]) (que [9;9;9]))
     (que [25;27])
     "map4"

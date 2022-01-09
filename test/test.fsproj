@@ -8,7 +8,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Queue\Queue.fsproj" />
+    <ProjectReference Include="..\lib\Queue.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Expecto" Version="9.0.4" />
