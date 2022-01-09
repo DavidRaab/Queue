@@ -144,10 +144,9 @@ module Queue =
 
     let init length generator =
         let gen idx =
-            if idx < length then
-                ValueSome (generator idx, idx+1)
-            else
-                ValueNone
+            if   idx < length
+            then ValueSome (generator idx, idx+1)
+            else ValueNone
         if   length > 0
         then unfold gen 0
         else empty
@@ -221,9 +220,6 @@ module Queue =
             | ValueSome _     , ValueNone        -> state
         loop fq xq empty
 
-    let append queue1 (queue2:Queue<_>) =
-        addMany queue2 queue1
-
     let bind (f : 'a -> Queue<'b>) queue =
         fold (fun state x -> addMany (f x) state)  empty queue
 
@@ -232,9 +228,18 @@ module Queue =
             add (f x) q
         fold folder empty queue
 
+    let rev queue =
+        let (Queue (q,a,amount)) = queue
+        Queue.Queue (a,q,amount)
+
     // Utilities
     let lastIndex queue =
         length queue - 1
+
+    let append (queue1:Queue<'a>) (queue2:Queue<'a>) =
+        if   queue1.Length < queue2.Length
+        then prependMany (rev queue1) queue2
+        else addMany      queue2      queue1
 
     let last (Queue (r,a,_)) =
         match r,a with
@@ -289,9 +294,6 @@ module Queue =
                 let itemMin = projection item
                 if itemMin < min then ValueSome (itemMin,item) else orig
         ValueOption.map snd (fold folder ValueNone queue)
-
-    let rev queue =
-        foldBack add queue empty
 
     let foldi f (state:'State) queue =
         fold (fun (idx,state) x ->

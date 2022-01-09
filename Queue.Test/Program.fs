@@ -100,22 +100,22 @@ Test.equal (Queue.updateAt -5 10  (Queue.range 1 10))    (Queue.range 1 10)     
 Test.equal
     (Queue.mapi (fun i x -> (i,x)) (Queue.range 1 10))
     (Queue.indexed (Queue.range 1 10))
-    "Queue.mapi"
+    "mapi"
 
 Test.equal
     (Queue.append (Queue.ofSeq [1..3]) (Queue.ofSeq [4..6]))
     (Queue.range 1 6)
-    "Queue.append"
+    "append"
 
 Test.equal
     (Queue.map2 (fun x y -> x + y) (Queue.ofSeq [1..3]) (Queue.ofSeq [10..15]))
     (que [11;13;15])
-    "Queue.map2"
+    "map2"
 
 Test.equal
     (Queue.map4 (fun a b c d -> a + b + c + d) (que [1;2]) (que [10;11]) (que [5;5;4;12]) (que [9;9;9]))
     (que [25;27])
-    "Queue.map4"
+    "map4"
 
 let cartesian =
     let cartesian =
@@ -462,30 +462,20 @@ let countBy =
         (ValueSome ("Welt", 1))
         "CountBy 2"
 
-Test.equal
-    (Queue.rev (Queue.range 1 5))
-    (que [5;4;3;2;1])
-    "rev 1"
-
-Test.equal
-    (Queue.rev (que [5;4;3;2;1]))
-    (Queue.range 1 5)
-    "rev 2"
-
-Test.equal
-    (Queue.range 1 5)
-    (Queue.rev (Queue.rev (Queue.range 1 5)))
-    "rev 3"
-
-Test.equal
-    (Queue.rev Queue.empty)
-    Queue.empty
-    "rev 4"
+Test.equal (Queue.rev (Queue.range 1 5)) (que [5;4;3;2;1]) "rev 1"
+Test.equal (Queue.rev (que [5;4;3;2;1])) (Queue.range 1 5) "rev 2"
+Test.equal (Queue.rev Queue.empty)        Queue.empty      "rev 3"
+Test.equal (Queue.range 1 5)             (Queue.rev (Queue.rev (Queue.range 1 5))) "rev 4"
 
 Test.equal
     (Queue.exactlyOne (Queue.tail (Queue.rev (Queue.one 100 |> Queue.add 10))))
     (ValueSome 100)
     "rev 5"
+
+Test.equal
+    (Queue.rev (Queue.append (Queue.range 1 10) (Queue.rangeWithStep 6 -1 0)))
+    (Queue.append (Queue.range 0 6) (Queue.rangeWithStep 10 -1 1))
+    "rev 6"
 
 Test.equal (Queue.exactlyOne    (que [5;1]))               (ValueNone   ) "exactlyOne 1"
 Test.equal (Queue.exactlyOne    (que [5;1] |> Queue.tail)) (ValueSome  1) "exactlyOne 2"
@@ -1103,6 +1093,11 @@ Test.equal
     (Queue.prependMany [1..5] (Queue.one 0))
     (que [5;4;3;2;1;0])
     "prependMany"
+
+Test.equal
+    (Queue.append (que [1;2]) (Queue.range 1 1000))
+    (Queue.Queue ([1;2],(List.rev [1..1000]),1002))
+    "Optimized append 1"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
