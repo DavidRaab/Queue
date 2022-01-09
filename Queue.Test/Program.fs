@@ -272,8 +272,43 @@ Test.equal
 
 Test.equal
     (Queue.rangeWithStep 1 2 10)
-    (que [1;3;5;7;9])
-    "rangeWithStep"
+    (Queue.ofList [1..2..10])
+    "rangeWithStep 1"
+
+Test.equal
+    (Queue.rangeWithStep 1 100 10)
+    (Queue.ofList [1..100..10])
+    "rangeWithStep 2"
+
+Test.equal
+    (Queue.rangeWithStep 10 -1 0)
+    (Queue.ofList [10..-1..0])
+    "rangeWithStep 3"
+
+Test.equal
+    (Queue.rangeWithStep 10 1 0)
+    (Queue.ofList [10..1..0])
+    "rangeWithStep 4"
+
+Test.equal
+    (Queue.rangeWithStep 10 -100 0)
+    (Queue.ofList [10..-100..0])
+    "rangeWithStep 5"
+
+Test.equal
+    (Queue.rangeWithStep 10 100 10)
+    (Queue.ofList [10..100..10])
+    "rangeWithStep 6"
+
+Test.equal
+    (Queue.rangeWithStep 10 -100 10)
+    (Queue.ofList [10..-100..10])
+    "rangeWithStep 7"
+
+Test.equal
+    (Queue.rangeWithStep 1 -1 10)
+    (Queue.ofList [1..-1..10])
+    "rangeWithStep 8"
 
 Test.ok
     (Queue.forall (fun (x,y) -> isFloat x y)
@@ -1063,6 +1098,11 @@ Test.equal
     (Queue.scanBack (+) (que ["A";"B";"C"]) "")
     (que [""; "C"; "BC"; "ABC"])
     "scanBack 1"
+
+Test.equal
+    (Queue.prependMany [1..5] (Queue.one 0))
+    (que [5;4;3;2;1;0])
+    "prependMany"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()

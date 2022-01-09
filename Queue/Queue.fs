@@ -25,8 +25,8 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
         | :? Queue<'a> as other ->
             let rec loop (queue1:Queue<'a>) (queue2:Queue<'a>) =
                 match queue1.Head(), queue2.Head() with
-                | ValueNone,        ValueNone        -> true
                 | ValueSome (x,q1), ValueSome (y,q2) -> if Unchecked.equals x y then loop q1 q2 else false
+                | ValueNone,        ValueNone        -> true
                 | _                                  -> failwith "Not Possible"
             if   this.Length = other.Length
             then loop this other
@@ -37,17 +37,25 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
     override this.GetHashCode () = Unchecked.hash this
 
     member private this.asSequence () =
-        let s = seq {
-            let mutable queue  = this
-            let mutable notEnd = true
-            while notEnd do
-                match queue.Head () with
-                | ValueNone       -> notEnd <- false
-                | ValueSome (h,t) ->
-                    queue <- t
-                    yield h
+        let mutable queue   = this
+        let mutable current = Unchecked.defaultof<_>
+        { new System.Collections.Generic.IEnumerator<'a> with
+            member _.Current with get () : 'a  = current
+            member _.Current with get () : obj = box current
+            member _.MoveNext () =
+                match queue.Head() with
+                | ValueNone ->
+                    current <- Unchecked.defaultof<_>
+                    false
+                | ValueSome (x,t) ->
+                    queue   <- t
+                    current <- x
+                    true
+            member _.Reset() =
+                queue   <- this
+                current <- Unchecked.defaultof<_>
+            member _.Dispose () = ()
         }
-        s.GetEnumerator()
 
     interface System.Collections.Generic.IEnumerable<'a> with
         override this.GetEnumerator(): System.Collections.Generic.IEnumerator<'a> =
@@ -62,13 +70,13 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
             | :? Queue<'a> as other ->
                 let rec loop (queue1:Queue<'a>) (queue2:Queue<'a>) =
                     match queue1.Head (), queue2.Head () with
-                    | ValueNone  , ValueNone   ->  0
-                    | ValueSome _, ValueNone   ->  1
-                    | ValueNone  , ValueSome _ -> -1
                     | ValueSome (x,q1), ValueSome (y,q2) ->
                         match Unchecked.compare x y with
                         | 0 -> loop q1 q2
                         | x -> x
+                    | ValueNone  , ValueNone   ->  0
+                    | ValueSome _, ValueNone   ->  1
+                    | ValueNone  , ValueSome _ -> -1
                 loop this other
             | _ -> failwith "Boom"
 
@@ -80,8 +88,14 @@ module Queue =
     let add x (Queue (q,r,l)) =
         queue q (x::r) (l+1)
 
+    let addMany xs queue =
+        Seq.fold (fun q x -> add x q) queue xs
+
     let prepend x (Queue (q,r,l)) =
         queue (x::q) r (l+1)
+
+    let prependMany xs queue =
+        Seq.fold (fun q x -> prepend x q) queue xs
 
     let one x =
         add x empty
@@ -100,30 +114,33 @@ module Queue =
             else ValueNone
         ) 0
 
-    let addMany xs queue =
-        Seq.fold (fun q x -> add x q) queue xs
-
     let inline range start stop =
         if stop < start then
             empty
         else
             start |> unfold (fun x ->
-                if x <= stop then
-                    ValueSome (x, x+LanguagePrimitives.GenericOne)
-                else
-                    ValueNone
+                if x <= stop
+                then ValueSome (x, x+LanguagePrimitives.GenericOne)
+                else ValueNone
             )
 
     let inline rangeWithStep start step stop =
-        if stop < start then
-            empty
-        else
+        if start = stop then
+            one start
+        elif start < stop && step > LanguagePrimitives.GenericZero then
             start |> unfold (fun x ->
-                if x <= stop then
-                    ValueSome (x, x+step)
-                else
-                    ValueNone
+                if   x <= stop
+                then ValueSome (x, x+step)
+                else ValueNone
             )
+        elif stop < start && step < LanguagePrimitives.GenericZero then
+            start |> unfold (fun x ->
+                if   x >= stop
+                then ValueSome (x, x+step)
+                else ValueNone
+            )
+        else
+            empty
 
     let init length generator =
         let gen idx =
@@ -180,13 +197,14 @@ module Queue =
             (newState, add newState states)
         snd (fold folder (state,one state) queue)
 
-    let foldBack f q (state:'State) =
-        let rec loop state q =
-            match q with
-            | Queue([],[]  ,_) -> state
-            | Queue(q ,[]  ,l) -> loop state (queue [] (List.rev q) l)
-            | Queue(q ,x::a,l) -> loop (f x state) (queue q a (l-1))
-        loop state q
+    let foldBack f queue (state:'State) =
+        let (Queue (q,a,_)) = queue
+        let rec loop state a q =
+            match a,q with
+            | [],[]   -> state
+            | x::a,q  -> loop (f x state) a  q
+            | [],x::q -> loop (f x state) [] q
+        loop state a (List.rev q)
 
     let scanBack f queue (state:'State) =
         let folder x (state,states) =
@@ -197,21 +215,17 @@ module Queue =
     let apply fq xq =
         let rec loop fq xq state =
             match head fq, head xq with
+            | ValueSome (f,fq), ValueSome (x,xq) -> loop fq xq (add (f x) state)
             | ValueNone       , ValueNone        -> state
             | ValueNone       , ValueSome _      -> state
             | ValueSome _     , ValueNone        -> state
-            | ValueSome (f,fq), ValueSome (x,xq) -> loop fq xq (add (f x) state)
         loop fq xq empty
 
-    let append queue1 queue2 =
-        let folder state x =
-            add x state
-        fold folder queue1 queue2
+    let append queue1 (queue2:Queue<_>) =
+        addMany queue2 queue1
 
-    let bind f queue =
-        let folder state x =
-            append state (f x)
-        fold folder empty queue
+    let bind (f : 'a -> Queue<'b>) queue =
+        fold (fun state x -> addMany (f x) state)  empty queue
 
     let map f queue =
         let folder q x =
@@ -653,12 +667,9 @@ module Queue =
         ) empty dict
 
     let exactlyOne queue =
-        match head queue with
-        | ValueNone       -> ValueNone
-        | ValueSome (x,t) ->
-            match head t with
-            | ValueNone   -> ValueSome x
-            | ValueSome _ -> ValueNone
+        if   length queue = 1
+        then ValueOption.map fst (head queue)
+        else ValueNone
 
     let find predicate queue =
         let rec loop queue =
