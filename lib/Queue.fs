@@ -12,10 +12,10 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
     member this.Head () =
         let (Queue (q,a,amount)) = this
         match q,a,amount with
-        | [] ,[],_  -> ValueNone
-        | [x],[],1  -> ValueSome (x,Queue([],[],0))
+        | [] ,[] ,_  -> ValueNone
+        | [x],[] ,1  -> ValueSome (x,Queue([],[],0))
         | [] ,[x],1 -> ValueSome (x,Queue([],[],0))
-        | [] ,r,l   ->
+        | [] ,r  ,l   ->
             let newQ = List.rev r
             ValueSome (List.head newQ, Queue((List.tail newQ),[],(l-1)))
         | q,a,l   ->
@@ -764,6 +764,28 @@ module Queue =
 
     let pairwise queue =
         zip queue (tail queue)
+
+    let splitAt index queue =
+        foldi (fun idx (left,right) x ->
+            if   idx < index
+            then (add x left,       right)
+            else (      left, add x right)
+        ) (empty,empty) queue
+
+    let splitInto count queue =
+        if   count <= 0           then empty
+        elif count > length queue then map one queue
+        else
+            let size     = length queue
+            let overhead = size % ((size / count) * count)
+            let amounts  = List.init count (fun idx -> if idx < overhead then (size / count) + 1 else size /count)
+
+            let rec loop take amounts queue current result =
+                match take, head queue with
+                | _     , ValueNone           -> add current result
+                | 0     , ValueSome (x,queue) -> loop (List.head amounts - 1) (List.tail amounts) queue (add x empty)   (add current result)
+                | amount, ValueSome (x,queue) -> loop (amount-1)               amounts            queue (add x current)  result
+            loop (List.head amounts) (List.tail amounts) queue empty empty
 
     let permute indexMap queue =
         let length = length queue

@@ -1111,6 +1111,51 @@ Test.equal
     (Queue.Queue ([1;2],(List.rev [1..1000]),1002))
     "Optimized append 1"
 
+Test.equal
+    (Queue.splitAt 4 (Queue.range 1 10))
+    (Queue.slice 0 3 (Queue.range 1 10), Queue.slice 4 9 (Queue.range 1 10))
+    "splitAt 1"
+
+Test.equal
+    (Queue.splitAt -1 (Queue.range 1 10))
+    (Queue.empty, (Queue.range 1 10))
+    "splitAt 2"
+
+Test.equal
+    (Queue.splitAt 20 (Queue.range 1 10))
+    (Queue.range 1 10, Queue.empty)
+    "splitAt 3"
+
+Test.equal
+    (Queue.splitInto 2 (Queue.range 1 10))
+    (que [Queue.range 1 5; Queue.range 6 10])
+    "splitInto 1"
+
+Test.equal
+    (Queue.splitInto 4 (Queue.range 1 10))
+    (que [que [1;2;3] ; que [4;5;6] ; que [7;8] ; que [9;10]])
+    "splitInto 2"
+
+Test.equal
+    (Queue.splitInto 10 (Queue.range 1 10))
+    (Queue.map Queue.one (Queue.range 1 10))
+    "splitInto 3"
+
+Test.equal
+    (Queue.splitInto 20 (Queue.range 1 10))
+    (Queue.map Queue.one (Queue.range 1 10))
+    "splitInto 4"
+
+Test.equal
+    (Queue.splitInto 0 (Queue.range 1 10))
+    (Queue.empty)
+    "splitInto 5"
+
+Test.equal
+    (Queue.splitInto -10 (Queue.range 1 10))
+    Queue.empty
+    "splitInto 6"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
