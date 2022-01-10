@@ -1,27 +1,23 @@
 namespace Queue
 
-[<CustomEquality;CustomComparison>]
-type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
-    Queue of queue:list<'a> * added:list<'a> * length:int
+type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
+    static member Empty = Queue([],[],0)
 
-    with
-    static member Empty : Queue<'a> = Queue([],[],0)
-    member this.Length =
-        let (Queue (_,_,length)) = this
-        length
+    member _.Queue  = q
+    member _.Added  = a
+    member _.Length = length
 
-    member this.Head () =
-        let (Queue (q,a,amount)) = this
-        if amount > 1 then
+    member _.Head () =
+        if length > 1 then
             match q,a with
-                | x::xs, a -> ValueSome (x, Queue(xs,a,(amount-1)))
+                | x::xs, a -> ValueSome (x, Queue(xs,a,(length-1)))
                 |    [], a ->
                     let newQ = List.rev a
-                    ValueSome (List.head newQ, Queue((List.tail newQ),[],(amount-1)))
-        elif amount = 1 then
+                    ValueSome (List.head newQ, Queue((List.tail newQ),[],(length-1)))
+        elif length = 1 then
             if   List.isEmpty q
-            then ValueSome (List.head a, Queue.Empty)
-            else ValueSome (List.head q, Queue.Empty)
+            then ValueSome (List.head a, Queue([],[],0))
+            else ValueSome (List.head q, Queue([],[],0))
         else
             ValueNone
 
@@ -87,17 +83,16 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
 
 module Queue =
     // Creation of Queue
-    let empty               = Queue ([],[],0)
-    let private queue q a l = Queue (q,a,l)
+    let empty<'a> : Queue<'a> = Queue.Empty
 
-    let add x (Queue (q,r,l)) =
-        queue q (x::r) (l+1)
+    let add x (queue : Queue<'a>) =
+        Queue(queue.Queue, x :: queue.Added, queue.Length + 1)
 
     let addMany xs queue =
         Seq.fold (fun q x -> add x q) queue xs
 
-    let prepend x (Queue (q,r,l)) =
-        queue (x::q) r (l+1)
+    let prepend x (queue : Queue<'a>) =
+        Queue(x :: queue.Queue, queue.Added, queue.Length + 1)
 
     let prependMany xs queue =
         Seq.fold (fun q x -> prepend x q) queue xs
@@ -163,8 +158,8 @@ module Queue =
         else empty
 
     // Low-Level & Basic Implementations
-    let isEmpty (Queue (xs,ys,_)) =
-        xs = [] && ys = []
+    let isEmpty (queue:Queue<'a>) =
+        queue.Length = 0
 
     let length (q:Queue<'a>) =
         q.Length
@@ -175,17 +170,15 @@ module Queue =
     let equal (q1:Queue<'a>) (q2:Queue<'a>) =
         q1.Equals(q2)
 
-    let rev queue =
-        let (Queue (q,a,amount)) = queue
-        Queue.Queue (a,q,amount)
+    let rev (queue : Queue<'a>)=
+        Queue(queue.Added, queue.Queue, queue.Length)
 
     let tail queue =
         match head queue with
         | ValueSome (h,t) -> t
-        | ValueNone       -> empty
+        | ValueNone       -> Queue([],[],0)
 
-    let fold f (state:'State) queue =
-        let (Queue (q,a,_)) = queue
+    let fold f (state:'State) (queue : Queue<'a>) =
         let rec loop first remaining state =
             match first with
             | []    ->
@@ -193,7 +186,7 @@ module Queue =
                 then state
                 else loop remaining [] state
             | x::xs -> loop xs remaining (f state x)
-        loop q (List.rev a) state
+        loop queue.Queue (List.rev queue.Added) state
 
     let fold2 f (state:'State) queue1 queue2 =
         let rec loop state q1 q2 =
@@ -238,7 +231,7 @@ module Queue =
         loop fq xq empty
 
     let bind (f : 'a -> Queue<'b>) queue =
-        fold (fun state x -> addMany (f x) state)  empty queue
+        fold (fun state x -> addMany (f x) state) empty queue
 
     let map f queue =
         let folder q x =
@@ -254,8 +247,8 @@ module Queue =
         then prependMany (rev queue1) queue2
         else addMany      queue2      queue1
 
-    let last (Queue (r,a,_)) =
-        match r,a with
+    let last (queue : Queue<'a>) =
+        match queue.Queue, queue.Added with
         | [],[]      -> ValueNone
         | r ,[]      -> ValueSome (List.last r)
         | _ ,last::a -> ValueSome last
@@ -453,8 +446,8 @@ module Queue =
             | ValueSome x -> add x q
         fold folder empty queue
 
-    let contains x (Queue (q,a,_)) =
-        List.contains x q || List.contains x a
+    let contains x (queue:Queue<'a>) =
+        List.contains x queue.Queue || List.contains x queue.Added
 
     let take amount q =
         let gen (amount,q) =
@@ -563,9 +556,9 @@ module Queue =
             match index, head queue with
             | (idx,ValueNone) when idx < 0 -> newQ
             | 0,   ValueNone               -> add value newQ
-            | 0,   ValueSome (x,t)         -> loop -1      t     (add x           (add value newQ))
+            | 0,   ValueSome (x,t)         -> loop -1      t           (add x           (add value newQ))
             | idx, ValueNone               -> loop (idx-1) empty (add zeroElement newQ)
-            | idx, ValueSome (x,t)         -> loop (idx-1) t     (add x           newQ)
+            | idx, ValueSome (x,t)         -> loop (idx-1) t           (add x           newQ)
         if   index < 0
         then queue
         else loop index queue empty
@@ -586,7 +579,7 @@ module Queue =
             | 0,     ValueSome (x,t)          -> loop -1 t (add value newQ)
             | index, ValueNone when index < 0 -> newQ
             | index, ValueNone                -> loop (index-1) empty (add zeroElement newQ)
-            | index, ValueSome (x,t)          -> loop (index-1) t     (add x newQ)
+            | index, ValueSome (x,t)          -> loop (index-1) t           (add x newQ)
         if   index < 0
         then queue
         else loop index queue empty
@@ -607,9 +600,9 @@ module Queue =
             match index, head queue with
             | (idx,ValueNone) when idx < 0 -> newQ
             | 0,   ValueNone               -> addMany values newQ
-            | 0,   ValueSome (x,t)         -> loop -1      t     (add x (addMany values newQ))
+            | 0,   ValueSome (x,t)         -> loop -1      t           (add x (addMany values newQ))
             | idx, ValueNone               -> loop (idx-1) empty (add zeroElement newQ)
-            | idx, ValueSome (x,t)         -> loop (idx-1) t     (add x           newQ)
+            | idx, ValueSome (x,t)         -> loop (idx-1) t           (add x           newQ)
         if   index < 0
         then queue
         else loop index queue empty
@@ -792,7 +785,7 @@ module Queue =
                 match take, head queue with
                 | _     , ValueNone           -> add current result
                 | 0     , ValueSome (x,queue) -> loop (List.head amounts - 1) (List.tail amounts) queue (add x empty)   (add current result)
-                | amount, ValueSome (x,queue) -> loop (amount-1)               amounts            queue (add x current)  result
+                | amount, ValueSome (x,queue) -> loop (amount-1)               amounts            queue (add x current)        result
             loop (List.head amounts) (List.tail amounts) queue empty empty
 
     let permute indexMap queue =
