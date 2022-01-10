@@ -171,6 +171,10 @@ module Queue =
     let equal (q1:Queue<'a>) (q2:Queue<'a>) =
         q1.Equals(q2)
 
+    let rev queue =
+        let (Queue (q,a,amount)) = queue
+        Queue.Queue (a,q,amount)
+
     let tail queue =
         match head queue with
         | ValueSome (h,t) -> t
@@ -204,13 +208,11 @@ module Queue =
         snd (fold folder (state,one state) queue)
 
     let foldBack f queue (state:'State) =
-        let (Queue (q,a,_)) = queue
-        let rec loop state a q =
-            match a,q with
-            | [],[]   -> state
-            | x::a,q  -> loop (f x state) a  q
-            | [],x::q -> loop (f x state) [] q
-        loop state a (List.rev q)
+        let rec loop queue state =
+            match head queue with
+            | ValueSome (x,queue) -> loop queue (f x state)
+            | ValueNone           -> state
+        loop (rev queue) state
 
     let scanBack f queue (state:'State) =
         let folder x (state,states) =
@@ -234,10 +236,6 @@ module Queue =
         let folder q x =
             add (f x) q
         fold folder empty queue
-
-    let rev queue =
-        let (Queue (q,a,amount)) = queue
-        Queue.Queue (a,q,amount)
 
     // Utilities
     let lastIndex queue =
