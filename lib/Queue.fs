@@ -3,6 +3,13 @@ namespace Queue
 type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
     static member Empty = Queue([],[],0)
 
+    new(sequence) =
+        let added, amount =
+            Seq.fold (fun (added,amount) x ->
+                (x::added, amount+1)
+            ) ([],0) sequence
+        Queue([],added,amount)
+
     member _.Queue  = q
     member _.Added  = a
     member _.Length = length
