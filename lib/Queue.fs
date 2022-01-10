@@ -5,21 +5,25 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a> =
     Queue of queue:list<'a> * added:list<'a> * length:int
 
     with
+    static member Empty : Queue<'a> = Queue([],[],0)
     member this.Length =
         let (Queue (_,_,length)) = this
         length
 
     member this.Head () =
         let (Queue (q,a,amount)) = this
-        match q,a,amount with
-        | [] ,[] ,_  -> ValueNone
-        | [x],[] ,1  -> ValueSome (x,Queue([],[],0))
-        | [] ,[x],1 -> ValueSome (x,Queue([],[],0))
-        | [] ,r  ,l   ->
-            let newQ = List.rev r
-            ValueSome (List.head newQ, Queue((List.tail newQ),[],(l-1)))
-        | q,a,l   ->
-            ValueSome (List.head q,    Queue((List.tail q),a,(l-1)))
+        if amount > 1 then
+            match q,a with
+                | x::xs, a -> ValueSome (x, Queue(xs,a,(amount-1)))
+                |    [], a ->
+                    let newQ = List.rev a
+                    ValueSome (List.head newQ, Queue((List.tail newQ),[],(amount-1)))
+        elif amount = 1 then
+            if   List.isEmpty q
+            then ValueSome (List.head a, Queue.Empty)
+            else ValueSome (List.head q, Queue.Empty)
+        else
+            ValueNone
 
     override this.Equals obj =
         match obj with
@@ -181,11 +185,15 @@ module Queue =
         | ValueNone       -> empty
 
     let fold f (state:'State) queue =
-        let rec loop state queue =
-            match head queue with
-            | ValueSome (x,t) -> loop (f state x) t
-            | ValueNone       -> state
-        loop state queue
+        let (Queue (q,a,_)) = queue
+        let rec loop first remaining state =
+            match first with
+            | []    ->
+                if   List.isEmpty remaining
+                then state
+                else loop remaining [] state
+            | x::xs -> loop xs remaining (f state x)
+        loop q (List.rev a) state
 
     let fold2 f (state:'State) queue1 queue2 =
         let rec loop state q1 q2 =
@@ -255,8 +263,8 @@ module Queue =
     let mapReduce mapper reducer queue =
         let rec loop state queue =
             match head queue with
-            | ValueNone           -> ValueSome state
             | ValueSome (x,queue) -> loop (reducer state (mapper x)) queue
+            | ValueNone           -> ValueSome state
         match head queue with
         | ValueNone           -> ValueNone
         | ValueSome (x,queue) -> loop (mapper x) queue
@@ -264,40 +272,42 @@ module Queue =
     let mapFold mapper folder (state:'State) queue =
         let rec loop state queue =
             match head queue with
-            | ValueNone           -> state
             | ValueSome (x,queue) -> loop (folder state (mapper x)) queue
+            | ValueNone           -> state
         loop state queue
 
     let max queue =
         let folder state x =
             match state with
-            | ValueNone   -> ValueSome x
             | ValueSome y -> ValueSome (max x y)
+            | ValueNone   -> ValueSome x
         fold folder ValueNone queue
 
     let maxBy (projection: 'a -> 'Key) queue =
         let folder state item =
             match state with
-            | ValueNone                 -> ValueSome (projection item, item)
             | ValueSome (max,_) as orig ->
                 let itemMax = projection item
                 if itemMax > max then ValueSome (itemMax,item) else orig
+            | ValueNone ->
+                ValueSome (projection item, item)
         ValueOption.map snd (fold folder ValueNone queue)
 
     let min queue =
         let folder state x =
             match state with
-            | ValueNone   -> ValueSome x
             | ValueSome y -> ValueSome (min x y)
+            | ValueNone   -> ValueSome x
         fold folder ValueNone queue
 
     let minBy (projection: 'a -> 'Key) queue =
         let folder state item =
             match state with
-            | ValueNone                 -> ValueSome (projection item, item)
             | ValueSome (min,_) as orig ->
                 let itemMin = projection item
                 if itemMin < min then ValueSome (itemMin,item) else orig
+            | ValueNone ->
+                ValueSome (projection item, item)
         ValueOption.map snd (fold folder ValueNone queue)
 
     let foldi f (state:'State) queue =
