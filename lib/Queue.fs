@@ -110,8 +110,8 @@ module Queue =
     let unfold generator (state:'State) =
         let rec loop q state =
             match generator state with
-            | ValueNone           -> q
             | ValueSome (x,state) -> loop (add x q) state
+            | ValueNone           -> q
         loop empty state
 
     let repeat count x =
@@ -403,13 +403,13 @@ module Queue =
     let compareWith comparer queue1 queue2 =
         let rec loop queue1 queue2 =
             match head queue1, head queue2 with
-            | ValueNone  , ValueNone   ->  0
-            | ValueSome _, ValueNone   ->  1
-            | ValueNone  , ValueSome _ -> -1
             | ValueSome (x,q1), ValueSome (y,q2) ->
                 match comparer x y with
                 | 0 -> loop q1 q2
                 | x -> x
+            | ValueSome _, ValueNone   ->  1
+            | ValueNone  , ValueSome _ -> -1
+            | ValueNone  , ValueNone   ->  0
         loop queue1 queue2
 
     let allPairs queue1 queue2 =
@@ -421,8 +421,8 @@ module Queue =
                 loop 0 queue empty (add inner outer)
             else
                 match head queue with
-                | ValueNone       -> add inner outer
                 | ValueSome (x,t) -> loop (amount+1) t (add x inner) outer
+                | ValueNone       -> add inner outer
         if   size < 0 || isEmpty queue
         then empty
         else loop 0 queue empty empty
@@ -430,12 +430,11 @@ module Queue =
     let item idx queue =
         let rec loop i queue =
             match head queue with
-            | ValueNone       -> ValueNone
             | ValueSome (x,t) ->
-                if i = idx then
-                    ValueSome x
-                else
-                    loop (i+1) t
+                if   i = idx
+                then ValueSome x
+                else loop (i+1) t
+            | ValueNone -> ValueNone
         loop 0 queue
 
     let indexed queue =
@@ -449,8 +448,8 @@ module Queue =
     let choose f queue =
         let folder q x =
             match f x with
-            | ValueNone   -> q
             | ValueSome x -> add x q
+            | ValueNone   -> q
         fold folder empty queue
 
     let contains x (queue:Queue<'a>) =
@@ -460,8 +459,8 @@ module Queue =
         let gen (amount,q) =
             if amount > 0 then
                 match head q with
-                | ValueNone       -> ValueNone
                 | ValueSome (h,t) -> ValueSome (h, ((amount-1),t))
+                | ValueNone       -> ValueNone
             else
                 ValueNone
         if   amount <= 0
@@ -472,8 +471,8 @@ module Queue =
         let rec loop amount q =
             if amount > 0 then
                 match head q with
-                | ValueNone       -> empty
                 | ValueSome (_,t) -> loop (amount-1) t
+                | ValueNone       -> empty
             else
                 q
         if   amount <= 0
@@ -483,21 +482,21 @@ module Queue =
     let takeWhile predicate queue =
         let rec loop queue newQ =
             match head queue with
-            | ValueNone       -> newQ
             | ValueSome (x,t) ->
                 if   predicate x
                 then loop t (add x newQ)
                 else newQ
+            | ValueNone -> newQ
         loop queue empty
 
     let skipWhile predicate queue =
         let rec loop queue =
             match head queue with
-            | ValueNone       -> empty
             | ValueSome (x,t) ->
                 if   predicate x
                 then loop t
                 else queue
+            | ValueNone -> empty
         loop queue
 
     let distinct queue =
@@ -505,12 +504,12 @@ module Queue =
         let mutable value = false
         let rec loop newQ queue =
             match head queue with
-            | ValueNone      -> newQ
             | ValueSome(x,t) ->
                 value <- false
                 match seen.TryGetValue(x, &value) with
                 | true  ->                   loop newQ         t
                 | false -> seen.Add(x,true); loop (add x newQ) t
+            | ValueNone -> newQ
         loop empty queue
 
     let distinctBy (projection: 'a -> 'Key) queue =
@@ -518,13 +517,13 @@ module Queue =
         let mutable value = false
         let rec loop newQ queue =
             match head queue with
-            | ValueNone      -> newQ
             | ValueSome(x,t) ->
                 let key = projection x
                 value <- false
                 match seen.TryGetValue(key, &value) with
                 | true  ->                     loop newQ         t
                 | false -> seen.Add(key,true); loop (add x newQ) t
+            | ValueNone -> newQ
         loop empty queue
 
     let slice start stop queue =
@@ -643,23 +642,21 @@ module Queue =
     let forall predicate queue =
         let rec loop q =
             match head q with
-            | ValueNone       -> true
             | ValueSome (x,t) ->
-                if predicate x then
-                    loop t
-                else
-                    false
+                if   predicate x
+                then loop t
+                else false
+            | ValueNone -> true
         loop queue
 
     let any predicate queue =
         let rec loop q =
             match head q with
-            | ValueNone       -> false
             | ValueSome (x,t) ->
-                if predicate x then
-                    true
-                else
-                    loop t
+                if   predicate x
+                then true
+                else loop t
+            | ValueNone -> false
         loop queue
 
     let countBy (projection: 'a -> 'Key) queue =
@@ -667,13 +664,13 @@ module Queue =
         let mutable count  = 0
         let rec loop queue =
             match head queue with
-            | ValueNone       -> ()
             | ValueSome (x,t) ->
                 let key = projection x
                 match dict.TryGetValue(key, &count) with
                 | false -> dict.Add(key, 1)
                 | true  -> dict.[key] <- count + 1
                 loop t
+            | ValueNone -> ()
         loop queue
 
         Seq.fold (fun queue (KeyValue (key,value)) ->
@@ -685,13 +682,13 @@ module Queue =
         let mutable q = empty
         let rec loop queue =
             match head queue with
-            | ValueNone       -> ()
             | ValueSome (x,t) ->
                 let key = projection x
                 match dict.TryGetValue(key, &q) with
                 | false -> dict.Add(key, one x)
                 | true  -> dict.[key] <- add x q
                 loop t
+            | ValueNone -> ()
         loop queue
 
         Seq.fold (fun queue (KeyValue (key,value)) ->
@@ -706,11 +703,11 @@ module Queue =
     let find predicate queue =
         let rec loop queue =
             match head queue with
-            | ValueNone       -> ValueNone
             | ValueSome (x,t) ->
                 if   predicate x
                 then ValueSome x
                 else loop t
+            | ValueNone -> ValueNone
         loop queue
 
     let findBack predicate queue =
@@ -723,11 +720,11 @@ module Queue =
     let findIndex predicate queue =
         let rec loop idx queue =
             match head queue with
-            | ValueNone       -> ValueNone
             | ValueSome (x,t) ->
                 if   predicate x
                 then ValueSome idx
                 else loop (idx+1) t
+            | ValueNone -> ValueNone
         loop 0 queue
 
     let findIndexBack predicate queue =
@@ -740,18 +737,18 @@ module Queue =
     let pick chooser queue =
         let rec loop queue =
             match head queue with
-            | ValueNone           -> ValueNone
             | ValueSome (x,queue) ->
                 match chooser x with
                 | ValueNone   -> loop queue
                 | ValueSome x -> ValueSome x
+            | ValueNone -> ValueNone
         loop queue
 
     let intersperse insert queue =
         let rec loop target queue =
             match head queue with
-            | ValueNone       -> target
             | ValueSome (x,t) -> loop (add insert target |> add x) t
+            | ValueNone       -> target
         match head queue with
         | ValueNone       -> empty
         | ValueSome (x,t) -> loop (add x empty) t
@@ -763,12 +760,12 @@ module Queue =
 
     let inline averageBy mapper queue =
         match head queue with
-        | ValueNone         -> ValueNone
         | ValueSome (acc,t) ->
             ValueSome
                 (LanguagePrimitives.DivideByInt
                     (fold (fun acc x -> acc + (mapper x)) (mapper acc) t)
                     (length t + 1))
+        | ValueNone -> ValueNone
 
     let pairwise queue =
         zip queue (tail queue)
@@ -826,11 +823,11 @@ module Queue =
         | 1 -> seq { queue }
         | _ ->
             match head queue with
-            | ValueNone           -> failwith "Cannot happen"
             | ValueSome (x,queue) -> seq {
                 for q in permutations queue do
                     yield! between x q
-            }
+                }
+            | ValueNone -> failwith "Cannot happen"
 
     let removeAt index queue =
         if index < 0 || index > lastIndex queue
