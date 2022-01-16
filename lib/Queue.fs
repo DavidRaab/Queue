@@ -245,6 +245,35 @@ module Queue =
             add (f x) q
         fold folder empty queue
 
+
+    // Side-Effects
+    let rec iter f queue =
+        match head queue with
+        | ValueSome (h,t) -> f h; iter f t
+        | ValueNone       -> ()
+
+    let rec iter2 f queue1 queue2 =
+        match head queue1, head queue2 with
+        | ValueSome (x1,q1), ValueSome(x2,q2) -> f x1 x2; iter2 f q1 q2
+        | _                                   -> ()
+
+    let iteri f queue =
+        let rec loop idx queue =
+            match head queue with
+            | ValueSome (x,t) -> f idx x; loop (idx+1) t
+            | ValueNone       -> ()
+        loop 0 queue
+
+    let iteri2 f queue1 queue2 =
+        let rec loop idx q1 q2 =
+            match head q1, head q2 with
+            | ValueSome (x1,q1), ValueSome (x2,q2) -> f idx x1 x2; loop (idx+1) q1 q2
+            | ValueSome _, ValueNone   -> ()
+            | ValueNone  , ValueSome _ -> ()
+            | ValueNone  , ValueNone   -> ()
+        loop 0 queue1 queue2
+
+
     // Utilities
     let lastIndex queue =
         length queue - 1
@@ -850,33 +879,6 @@ module Queue =
     let collect   = bind
     let exists    = any
     let singleton = one
-
-    // Side-Effects
-    let rec iter f queue =
-        match head queue with
-        | ValueSome (h,t) -> f h; iter f t
-        | ValueNone       -> ()
-
-    let rec iter2 f queue1 queue2 =
-        match head queue1, head queue2 with
-        | ValueSome (x1,q1), ValueSome(x2,q2) -> f x1 x2; iter2 f q1 q2
-        | _                                   -> ()
-
-    let iteri f queue =
-        let rec loop idx queue =
-            match head queue with
-            | ValueSome (x,t) -> f idx x; loop (idx+1) t
-            | ValueNone       -> ()
-        loop 0 queue
-
-    let iteri2 f queue1 queue2 =
-        let rec loop idx q1 q2 =
-            match head q1, head q2 with
-            | ValueSome (x1,q1), ValueSome (x2,q2) -> f idx x1 x2; loop (idx+1) q1 q2
-            | ValueSome _, ValueNone   -> ()
-            | ValueNone  , ValueSome _ -> ()
-            | ValueNone  , ValueNone   -> ()
-        loop 0 queue1 queue2
 
     // Converter
     let ofArray xs =
