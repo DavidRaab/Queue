@@ -874,6 +874,24 @@ module Queue =
                 (slice 0             (index-1)         queue)
                 (slice (index+count) (lastIndex queue) queue)
 
+    let transpose queues =
+        let xs = Array.ofSeq queues
+        if Array.isEmpty xs then
+            empty
+        else
+            let count = Array.min (Array.map length xs)
+            let res   = Array.create count empty
+            for queue in xs do
+                let rec loop i q =
+                    if i < count then
+                        match head q with
+                        | ValueSome (x,q) ->
+                            res.[i] <- add x (res.[i])
+                            loop (i+1) q
+                        | ValueNone -> ()
+                loop 0 queue
+            Queue res
+
     // Mappings
     let replicate = repeat
     let collect   = bind

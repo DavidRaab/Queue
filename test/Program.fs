@@ -1128,7 +1128,30 @@ Test.equal
     Queue.empty
     "splitInto 6"
 
+Test.equal
+    (Queue.transpose [Queue [10;20;30]; Queue [11;21;31]])
+    (Queue [Queue [10;11]; Queue [20;21]; Queue [30;31]])
+    "transpose 1"
 
+Test.equal
+    (Queue.transpose [Queue [10;20;30;40]; Queue [11;21;31]])
+    (Queue [Queue [10;11]; Queue [20;21]; Queue [30;31]])
+    "transpose 2"
+
+Test.equal
+    (Queue.transpose [Queue [10;20;30]; Queue [11;21;31;41]])
+    (Queue [Queue [10;11]; Queue [20;21]; Queue [30;31]])
+    "transpose 3"
+
+Test.equal
+    (Queue.transpose [Queue []])
+    Queue.empty
+    "transpose 4"
+
+Test.equal
+    (Queue.transpose [Queue.one 10])
+    (Queue.one (Queue.one 10))
+    "transpose 5"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
