@@ -648,6 +648,12 @@ module Queue =
     let zip3 queue1 queue2 queue3 =
         fold3 (fun q x y z -> add (x,y,z) q) empty queue1 queue2 queue3
 
+    let unzip queue =
+        fold (fun (l,r) (x,y) -> add x l, add y r) (empty,empty) queue
+
+    let unzip3 queue =
+        fold (fun (l,m,r) (x,y,z) -> add x l, add y m, add z r) (empty,empty,empty) queue
+
     let reduce reducer queue =
         let folder state x =
             reducer state x

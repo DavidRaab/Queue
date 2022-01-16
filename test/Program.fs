@@ -1153,6 +1153,26 @@ Test.equal
     (Queue.one (Queue.one 10))
     "transpose 5"
 
+let unzip =
+    let xs = Queue.range   1  10
+    let ys = Queue.range 100 250
+    let zs = Queue ['A' .. 'Z']
+
+    let amount =
+        min
+            (Queue.length xs)
+            (min (Queue.length ys) (Queue.length zs))
+
+    Test.equal
+        (Queue.unzip  (Queue.zip xs ys))
+        (Queue.take amount xs, Queue.take amount ys)
+        "unzip"
+
+    Test.equal
+        (Queue.unzip3 (Queue.zip3 xs ys zs))
+        (Queue.take amount xs, Queue.take amount ys, Queue.take amount zs)
+        "unzip3"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
