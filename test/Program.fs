@@ -1173,6 +1173,28 @@ let unzip =
         (Queue.take amount xs, Queue.take amount ys, Queue.take amount zs)
         "unzip3"
 
+Test.equal (Queue.windowed -1 (Queue.range 1 10)) (Queue.empty)                            "windowed 1"
+Test.equal (Queue.windowed  0 (Queue.range 1 10)) (Queue.empty)                            "windowed 2"
+Test.equal (Queue.windowed  1 (Queue.range 1 10)) (Queue.map Queue.one (Queue.range 1 10)) "windowed 3"
+Test.equal
+    (Queue.windowed  3 (Queue.range 1 10))
+    (Queue [
+        Queue [1;2;3]
+        Queue [2;3;4]
+        Queue [3;4;5]
+        Queue [4;5;6]
+        Queue [5;6;7]
+        Queue [6;7;8]
+        Queue [7;8;9]
+        Queue [8;9;10]
+    ])
+    "windowed 4"
+
+Test.equal
+    (Queue.windowed 3 (Queue.range 1 10))
+    (Queue (List.map Queue (List.windowed 3 [1..10])))
+    "windowed 5"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

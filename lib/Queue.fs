@@ -898,6 +898,17 @@ module Queue =
                 loop 0 queue
             Queue res
 
+    let windowed windowSize (queue:Queue<'a>) =
+        if   windowSize <= 0 then empty
+        elif windowSize  = 1 then map one queue
+        else
+            let rec loop res queue =
+                let  newQ = take windowSize queue
+                if   length newQ = windowSize
+                then loop (add newQ res) (tail queue)
+                else res
+            loop empty queue
+
     // Mappings
     let replicate = repeat
     let collect   = bind
