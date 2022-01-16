@@ -1195,6 +1195,12 @@ Test.equal
     (Queue (List.map Queue (List.windowed 3 [1..10])))
     "windowed 5"
 
+Test.ok    (Queue.forall2 (=)     (Queue.range 1 3) (Queue.range 1 3))     "forall2 1"
+Test.ok    (Queue.forall2 (=)     (Queue.range 1 3) (Queue.range 1 5))     "forall2 2"
+Test.ok    (Queue.forall2 (=)     (Queue.empty)     (Queue.range 1 3))     "forall2 3"
+Test.notOk (Queue.forall2 (=)     (Queue [1;2;3])   (Queue [1;2;4]))       "forall2 4"
+Test.ok    (Queue.forall2 eqFloat (Queue.range 1 3) (Queue.range 1.0 3.0)) "forall2 5"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

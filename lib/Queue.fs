@@ -684,6 +684,16 @@ module Queue =
             | ValueNone -> true
         loop queue
 
+    let forall2 predicate queue1 queue2 =
+        let rec loop q1 q2 =
+            match head q1, head q2 with
+            | ValueSome (x,q1), ValueSome (y,q2) ->
+                if   predicate x y
+                then loop q1 q2
+                else false
+            | _ -> true
+        loop queue1 queue2
+
     let any predicate queue =
         let rec loop q =
             match head q with
