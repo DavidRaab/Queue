@@ -1,7 +1,7 @@
 namespace Queue
 
 type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
-    static member Empty = Queue([],[],0)
+    static member Empty : Queue<'a> = Queue([],[],0)
 
     new(sequence) =
         let added, amount =
@@ -10,11 +10,11 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
             ) ([],0) sequence
         Queue([],added,amount)
 
-    member _.Queue  = q
-    member _.Added  = a
+    member _.Queue : list<'a> = q
+    member _.Added : list<'a> = a
     member _.Length = length
 
-    member _.Head () =
+    member _.Head () : voption<'a * Queue<'a>> =
         if length > 1 then
             match q,a with
                 | x::xs, a -> ValueSome (x, Queue(xs,a,(length-1)))
@@ -86,25 +86,25 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
                     | ValueSome _, ValueNone   ->  1
                     | ValueNone  , ValueSome _ -> -1
                 loop this other
-            | _ -> failwith "Boom"
+            | _ -> failwith "Comparison of two different types"
 
 module Queue =
     // Creation of Queue
     let empty<'a> : Queue<'a> = Queue.Empty
 
-    let add x (queue : Queue<'a>) =
+    let add x (queue: Queue<'a>) =
         Queue(queue.Queue, x :: queue.Added, queue.Length + 1)
 
-    let addMany xs queue =
+    let addMany (xs: seq<'a>) (queue: Queue<'a>) =
         Seq.fold (fun q x -> add x q) queue xs
 
-    let prepend x (queue : Queue<'a>) =
+    let prepend (x: 'a) (queue: Queue<'a>) =
         Queue(x :: queue.Queue, queue.Added, queue.Length + 1)
 
-    let prependMany xs queue =
+    let prependMany (xs: seq<'a>) (queue: Queue<'a>) =
         Seq.fold (fun q x -> prepend x q) queue xs
 
-    let one x =
+    let one (x: 'a) : Queue<'a> =
         Queue ([],[x],1)
 
     let unfold generator (state:'State) =
@@ -943,9 +943,14 @@ module Queue =
 
 #nowarn "60"
 type Queue<'a> with
-    override q.ToString()            = sprintf "Queue %A" (Queue.toList q)
-    member this.Item with get(i:int) = Queue.item i this
-    member this.GetSlice(start,stop) =
-        let start,stop = defaultArg start 0, defaultArg stop (Queue.lastIndex this)
-        Queue.slice start stop this
-    static member (++) (q1,q2)       = Queue.append q1 q2
+    override q.ToString() =
+        sprintf "Queue %A" (Queue.toList q)
+    member this.Item with get(i:int) =
+        Queue.item i this
+    member this.GetSlice(start,stop) : Queue<'a> =
+        Queue.slice
+            (defaultArg start 0)
+            (defaultArg stop (Queue.lastIndex this))
+            this
+    static member (++) (q1:Queue<'a>,q2:Queue<'a>) : Queue<'a> =
+        Queue.append q1 q2

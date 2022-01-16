@@ -24,29 +24,64 @@ module Test =
             Expect.isFalse bool msg
         })
 
+    let eqFloat actual expected msg =
+        tests.Add (test msg {
+            Expect.floatClose Accuracy.high  actual expected msg
+        })
+
+
 // Utility functions
 let add1   x = x + 1
 let double x = x * 2
 let isEven x = x % 2 = 0
 let square x = x * x
 
-let isFloat x y =
+let eqFloat x y =
     (abs (x - y)) < 0.000001
 
+let eqFloats expected source =
+    (Queue.forall (fun x -> x = true)
+        (Queue.map2 eqFloat expected source))
+
+
 // Actual Tests
+Test.equal (Queue.length (Queue.range 1 10))   10                  "range length"
+Test.equal (Queue.range 1 10)    (Queue.ofList [1..10])            "range 1"
+Test.equal (Queue.range 10 1)    (Queue.ofList (List.rev [1..10])) "range 2"
+Test.equal (Queue.range 10 1)    (Queue.rangeWithStep 10 -1 1)     "range 4"
+Test.equal (Queue.range 10 1)    (Queue.ofList [10..-1..1])        "range 5"
+Test.equal (Queue.range 10 10)   (Queue.ofList [10..10])           "range 6"
+Test.ok (eqFloats (Queue.range 1.5 4.4) (Queue [1.5; 2.5; 3.5]))   "range 7"
+Test.notEqual (Queue.range 10 1) (Queue.ofList [10..1])            "range 8"
+
+Test.equal (Queue.rangeWithStep 1     2 10) (Queue.ofList [1 ..   2..10]) "rangeWithStep 1"
+Test.equal (Queue.rangeWithStep 1   100 10) (Queue.ofList [1 .. 100..10]) "rangeWithStep 2"
+Test.equal (Queue.rangeWithStep 10   -1  0) (Queue.ofList [10..  -1.. 0]) "rangeWithStep 3"
+Test.equal (Queue.rangeWithStep 10    1  0) (Queue.ofList [10..   1.. 0]) "rangeWithStep 4"
+Test.equal (Queue.rangeWithStep 10 -100  0) (Queue.ofList [10..-100.. 0]) "rangeWithStep 5"
+Test.equal (Queue.rangeWithStep 10  100 10) (Queue.ofList [10.. 100..10]) "rangeWithStep 6"
+Test.equal (Queue.rangeWithStep 10 -100 10) (Queue.ofList [10..-100..10]) "rangeWithStep 7"
+Test.equal (Queue.rangeWithStep 1    -1 10) (Queue.ofList [1 ..  -1..10]) "rangeWithStep 8"
+
+Test.ok
+    (eqFloats
+        (Queue.rangeWithStep 1.0 0.2 2.3)
+        (Queue [1.0;1.2;1.4;1.6;1.8;2.0;2.2]))
+    "rangeWithStep float"
+
 Test.equal
     (Queue.empty |> Queue.add 1 |> Queue.add 2 |> Queue.add 3)
     (Queue.range 1 3)
     "add"
 
 Test.equal
-    (Queue.append (Queue [10]) (Queue.range 1 3) |> Queue.tail)
+    (Queue.append (Queue.one 10) (Queue.range 1 3) |> Queue.tail)
     (Queue.range 1 3)
     "append 1"
 
 Test.equal
     (Queue.append (Queue.one 1) (Queue.range 2 5))
-    (Queue.one 1 ++ (Queue.range 2 5))
+    (Queue.one 1 ++ Queue.range 2 5)
     "append ++"
 
 Test.equal    (Queue.range 1 10) (Queue.range 1 10) "Two equal Queues"
@@ -186,7 +221,7 @@ Test.equal
 Test.equal
     (Queue.choose squareEven (Queue.range 1 10))
     (Queue.mapFilter square isEven (Queue.range 1 10))
-    "Queue.choose vs Queue.mapFilter"
+    "choose vs mapFilter"
 
 Test.equal
     (Queue.range 1 10 |> Queue.filter isEven |> Queue.map square)
@@ -239,9 +274,7 @@ Test.notOk
     (Queue.any isEven (Queue [1;3;5]))
     "any 2"
 
-Test.ok
-    ((abs ((Queue.sum (Queue [1.1; 1.5; 3.2])) - 5.8)) < 0.0000001)
-    "Sum of Float"
+Test.eqFloat 5.8 (Queue.sum (Queue [1.1; 1.5; 3.2])) "Sum of Float"
 
 Test.equal
     (Queue.sum (Queue [1; 2; 3]))
@@ -251,7 +284,7 @@ Test.equal
 Test.equal
     (Queue.sort (Queue [5;12;5;1;-12]))
     (Queue.empty |> Queue.addMany [-12;1;5;5;12])
-    "Queue.sort"
+    "sort"
 
 Test.equal
     (Queue.range 1 10)
@@ -267,65 +300,6 @@ Test.equal
     (Queue.addMany [4;5;6] (Queue.range 1 3))
     (Queue.range 1 6)
     "addMany 3"
-
-Test.equal
-    (Queue.range 1 10 |> Queue.length)
-    10
-    "range length"
-
-Test.equal (Queue.range 1 10)    (Queue.ofList [1..10])            "range 1"
-Test.equal (Queue.range 10 1)    (Queue.ofList (List.rev [1..10])) "range 2"
-Test.equal (Queue.range 10 1)    (Queue.rangeWithStep 10 -1 1)     "range 4"
-Test.equal (Queue.range 10 1)    (Queue.ofList [10..-1..1])        "range 5"
-Test.equal (Queue.range 10 10)   (Queue.ofList [10..10])           "range 6"
-Test.notEqual (Queue.range 10 1) (Queue.ofList [10..1])            "range 7"
-
-Test.equal
-    (Queue.rangeWithStep 1 2 10)
-    (Queue.ofList [1..2..10])
-    "rangeWithStep 1"
-
-Test.equal
-    (Queue.rangeWithStep 1 100 10)
-    (Queue.ofList [1..100..10])
-    "rangeWithStep 2"
-
-Test.equal
-    (Queue.rangeWithStep 10 -1 0)
-    (Queue.ofList [10..-1..0])
-    "rangeWithStep 3"
-
-Test.equal
-    (Queue.rangeWithStep 10 1 0)
-    (Queue.ofList [10..1..0])
-    "rangeWithStep 4"
-
-Test.equal
-    (Queue.rangeWithStep 10 -100 0)
-    (Queue.ofList [10..-100..0])
-    "rangeWithStep 5"
-
-Test.equal
-    (Queue.rangeWithStep 10 100 10)
-    (Queue.ofList [10..100..10])
-    "rangeWithStep 6"
-
-Test.equal
-    (Queue.rangeWithStep 10 -100 10)
-    (Queue.ofList [10..-100..10])
-    "rangeWithStep 7"
-
-Test.equal
-    (Queue.rangeWithStep 1 -1 10)
-    (Queue.ofList [1..-1..10])
-    "rangeWithStep 8"
-
-Test.ok
-    (Queue.forall (fun (x,y) -> isFloat x y)
-        (Queue.zip
-            (Queue.rangeWithStep 1.0 0.2 2.3)
-            (Queue [1.0;1.2;1.4;1.6;1.8;2.0;2.2])))
-    "rangeWithStep float"
 
 let lift4 =
     let add4 x y z w = x + y + z + w
@@ -859,7 +833,7 @@ Test.equal
     "sortBy 2"
 
 Test.equal
-    (ValueOption.map (isFloat 5.5) (Queue.average (Queue.range 1.0 10.0)))
+    (ValueOption.map (eqFloat 5.5) (Queue.average (Queue.range 1.0 10.0)))
     (ValueSome true)
     "average 1"
 
@@ -935,7 +909,7 @@ let groupBy =
     Test.equal (Queue.find (getLength 6) gb) (ValueSome (6, Queue ["Jetzt?"]))      "groubBy 6"
 
 Test.equal
-    (ValueOption.map (isFloat 3.0) (Queue.averageBy snd (Queue ["A",1.0; "B",3.0; "C",5.0])))
+    (ValueOption.map (eqFloat 3.0) (Queue.averageBy snd (Queue ["A",1.0; "B",3.0; "C",5.0])))
     (ValueSome true)
     "averageBy 1"
 
@@ -1153,6 +1127,8 @@ Test.equal
     (Queue.splitInto -10 (Queue.range 1 10))
     Queue.empty
     "splitInto 6"
+
+
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
