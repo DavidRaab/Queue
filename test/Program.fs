@@ -1201,6 +1201,11 @@ Test.ok    (Queue.forall2 (=)     (Queue.empty)     (Queue.range 1 3))     "fora
 Test.notOk (Queue.forall2 (=)     (Queue [1;2;3])   (Queue [1;2;4]))       "forall2 4"
 Test.ok    (Queue.forall2 eqFloat (Queue.range 1 3) (Queue.range 1.0 3.0)) "forall2 5"
 
+Test.equal
+    (Queue.except (Queue [1;4;7;10]) (Queue.range 0 9))
+    (Queue [0;2;3;5;6;8;9])
+    "except"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

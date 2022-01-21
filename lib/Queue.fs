@@ -484,6 +484,13 @@ module Queue =
     let contains x (queue:Queue<'a>) =
         List.contains x queue.Queue || List.contains x queue.Added
 
+    let except itemsToExclude queue =
+        fold (fun q x ->
+            if   contains x itemsToExclude
+            then q
+            else add x q
+        ) empty queue
+
     let take amount q =
         let gen (amount,q) =
             if amount > 0 then
