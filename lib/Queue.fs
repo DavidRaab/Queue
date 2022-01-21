@@ -711,6 +711,15 @@ module Queue =
             | ValueNone -> false
         loop queue
 
+    let any2 predicate queue1 queue2 =
+        let rec loop q1 q2 =
+            match head q1, head q2 with
+            | ValueSome (x,q1), ValueSome (y,q2) -> if predicate x y then true else loop q1 q2
+            | ValueSome (x,q1), ValueNone        -> false
+            | ValueNone       , ValueSome (y,q2) -> false
+            | ValueNone       , ValueNone        -> false
+        loop queue1 queue2
+
     let countBy (projection: 'a -> 'Key) queue =
         let dict = System.Collections.Generic.Dictionary()
         let mutable count  = 0
@@ -930,6 +939,7 @@ module Queue =
     let replicate = repeat
     let collect   = bind
     let exists    = any
+    let exists2   = any2
     let singleton = one
 
     // Converter

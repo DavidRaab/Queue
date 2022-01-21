@@ -1206,6 +1206,11 @@ Test.equal
     (Queue [0;2;3;5;6;8;9])
     "except"
 
+Test.notOk (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue.range 2  5))   "any2 1"
+Test.notOk (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue.range 2 10))   "any2 2"
+Test.ok    (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue.range 1 4))    "any2 3"
+Test.ok    (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue [2;3;4;4] ))   "any2 4"
+Test.ok    (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue [2;3;4;4;20])) "any2 5"
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
