@@ -3,12 +3,14 @@ namespace Queue
 type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
     static member Empty : Queue<'a> = Queue([],[],0)
 
-    new(sequence) =
-        let added, amount =
-            Seq.fold (fun (added,amount) x ->
-                (x::added, amount+1)
-            ) ([],0) sequence
-        Queue([],added,amount)
+    new(sequence:seq<'a>) =
+        match sequence with
+        | :? array<'a> as xs -> Queue(Array.toList xs, [], Array.length xs)
+        | :? list<'a>  as xs -> Queue(xs, [], List.length xs)
+        | _                  ->
+            let mutable amount = 0
+            let added = Seq.fold (fun xs x -> amount <- amount + 1; x :: xs) [] sequence
+            Queue([],added,amount)
 
     member _.Queue : list<'a> = q
     member _.Added : list<'a> = a
@@ -28,7 +30,10 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
         else
             ValueNone
 
-    override this.Equals obj =
+    member this.Add (x:'a) : Queue<'a> =
+        Queue(this.Queue, x :: this.Added, this.Length + 1)
+
+    override this.Equals (obj:obj) : bool =
         match obj with
         | :? Queue<'a> as other ->
             let rec loop (queue1:Queue<'a>) (queue2:Queue<'a>) =
@@ -42,7 +47,7 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
         | _ ->
             false
 
-    override this.GetHashCode () = Unchecked.hash this
+    override this.GetHashCode () : int = Unchecked.hash this
 
     member private this.getEnumerator () =
         let mutable queue   = this
@@ -93,7 +98,7 @@ module Queue =
     let empty<'a> : Queue<'a> = Queue.Empty
 
     let add x (queue: Queue<'a>) =
-        Queue(queue.Queue, x :: queue.Added, queue.Length + 1)
+        queue.Add x
 
     let addMany (xs: seq<'a>) (queue: Queue<'a>) =
         Seq.fold (fun q x -> add x q) queue xs
@@ -957,24 +962,17 @@ module Queue =
     let singleton = one
 
     // Converter
-    let ofArray xs =
-        let folder q x =
-            add x q
-        Array.fold folder empty xs
+    let ofArray xs : Queue<'a> =
+        Array.fold (fun q x -> q.Add x) Queue.Empty xs
 
-    let ofList xs =
-        let folder q x =
-            add x q
-        List.fold folder empty xs
+    let ofList xs : Queue<'a> =
+        List.fold (fun q x -> q.Add x) Queue.Empty xs
 
-    let ofSeq (xs:seq<_>) =
+    let ofSeq (xs:seq<'a>) : Queue<'a> =
         match xs with
-        | :? array<_> as xs -> ofArray xs
-        | :? list<_>  as xs -> ofList xs
-        | _ ->
-            let folder q x =
-                add x q
-            Seq.fold folder empty xs
+        | :? array<'a> as xs -> ofArray xs
+        | :? list<'a>  as xs -> ofList xs
+        | _                  -> Seq.fold (fun q x -> q.Add x) Queue.Empty xs
 
     let toSeq q =
         let unfolder q =
