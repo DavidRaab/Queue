@@ -976,36 +976,47 @@ module Queue =
     let singleton = one
 
     // Converter
-    let ofArray xs : Queue<'a> =
-        Array.fold (fun q x -> q.Add x) Queue.Empty xs
+    let ofArray array : Queue<'a> =
+        Queue(Array.toList array, [], Array.length array)
 
-    let ofList xs : Queue<'a> =
-        List.fold (fun q x -> q.Add x) Queue.Empty xs
+    let ofList list : Queue<'a> =
+        Queue(list, [], List.length list)
 
-    let ofSeq (xs:seq<'a>) : Queue<'a> =
-        match xs with
+    let ofSeq (seq:seq<'a>) : Queue<'a> =
+        match seq with
         | :? array<'a> as xs -> ofArray xs
         | :? list<'a>  as xs -> ofList xs
-        | _                  -> Seq.fold (fun q x -> q.Add x) Queue.Empty xs
+        | _                  -> Seq.fold (fun q x -> q.Add x) Queue.Empty seq
 
-    let toSeq q =
-        let unfolder q =
-            match head q with
-            | ValueNone       -> None
-            | ValueSome (h,t) -> Some (h,t)
-        Seq.unfold unfolder q
+    let toSeq (queue: Queue<'a>) =
+        queue :> seq<'a>
 
-    let toArray q =
-        let unfolder q =
-            match head q with
-            | ValueNone       -> None
-            | ValueSome (h,t) -> Some (h,t)
-        Array.unfold unfolder q
+    let toArray queue =
+        let array = Array.zeroCreate (length queue)
+        queue |> iteri (fun i x ->
+            array.[i] <- x
+        )
+        array
 
-    let toList q =
-        let folder x xs =
-            x :: xs
-        foldBack folder q []
+    let toList queue =
+        foldBack (fun x xs -> x :: xs) queue []
+
+    let toSet (queue:Queue<'a>) =
+        Set queue.Added + Set queue.Queue
+
+    let toMap (projection: 'a -> 'Key * 'Value) queue =
+        fold (fun m x -> let k,v = projection x in Map.add k v m) Map.empty queue
+
+    let toMapWithFold (projection: 'a -> 'Key) folder (state: 'Value) queue =
+        fold (fun m x ->
+            m |> Map.change (projection x) (function
+                | Some value -> Some (folder value x)
+                | None       -> Some (folder state x)
+            )
+        ) Map.empty queue
+
+    let toMapGroupBy (projection: 'a -> 'Key) queue =
+        toMapWithFold projection (fun queue x -> add x queue) empty queue
 
     // Sorting
     let sort queue =

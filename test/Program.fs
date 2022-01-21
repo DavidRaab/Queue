@@ -113,22 +113,22 @@ Test.equal intern (ValueSome (4,Queue [5;6;7;8;9])) "Queue.head"
 
 let q13 = Queue.range 1 3
 
-Test.equal (Queue.toSeq   q1to6 |> Seq.toList) [1;2;3;4;5;6]  "Queue.toSeq"
+Test.equal (Queue.toSeq   q1to6 |> Seq.toList) [1;2;3;4;5;6]  "toSeq 1"
 Test.equal (List.ofSeq    q1to6)               [1;2;3;4;5;6]  "List.ofSeq"
-Test.equal (Queue.toArray q1to6)              [|1;2;3;4;5;6|] "Queue.toArray"
-Test.equal (Queue.toList  q1to6)               [1;2;3;4;5;6]  "Queue.toList 2"
-Test.equal (Queue.ofSeq   (seq [1;2;3]))       q13            "Queue.ofSeq"
-Test.equal (Queue.ofArray [|1;2;3|])           q13            "Queue.ofArray"
-Test.equal (Queue.ofList [1;2;3])              q13            "Queue.ofList"
-Test.equal (Queue.take -3 q13)                 Queue.empty    "Queue.take -3"
-Test.equal (Queue.take  2 q13)                (Queue [1;2])   "Queue.take 2"
-Test.equal (Queue.take  5 q13)                 q13            "Queue.take 5"
-Test.equal (Queue.skip -3 q13)                 q13            "Queue.skip -3"
-Test.equal (Queue.skip  2 q13)                (Queue [3])     "Queue.skip 2"
-Test.equal (Queue.skip  5 q13)                (Queue.empty)   "Queue.skip 5"
-Test.equal (Queue.updateAt 3 10   (Queue.ofSeq [1..10])) (Queue [1;2;3;10;5;6;7;8;9;10]) "Queue.updateAt 3 10"
-Test.equal (Queue.updateAt 100 10 (Queue.range 1 10))    (Queue.range 1 10)              "Queue.updateAt 100 10"
-Test.equal (Queue.updateAt -5 10  (Queue.range 1 10))    (Queue.range 1 10)              "Queue.updateAt -5 10"
+Test.equal (Queue.toArray q1to6)              [|1;2;3;4;5;6|] "toArray"
+Test.equal (Queue.toList  q1to6)               [1;2;3;4;5;6]  "toList 2"
+Test.equal (Queue.ofSeq   (seq [1;2;3]))       q13            "ofSeq"
+Test.equal (Queue.ofArray [|1;2;3|])           q13            "ofArray"
+Test.equal (Queue.ofList [1;2;3])              q13            "ofList"
+Test.equal (Queue.take -3 q13)                 Queue.empty    "take -3"
+Test.equal (Queue.take  2 q13)                (Queue [1;2])   "take 2"
+Test.equal (Queue.take  5 q13)                 q13            "take 5"
+Test.equal (Queue.skip -3 q13)                 q13            "skip -3"
+Test.equal (Queue.skip  2 q13)                (Queue [3])     "skip 2"
+Test.equal (Queue.skip  5 q13)                (Queue.empty)   "skip 5"
+Test.equal (Queue.updateAt 3 10   (Queue.ofSeq [1..10])) (Queue [1;2;3;10;5;6;7;8;9;10]) "updateAt 3 10"
+Test.equal (Queue.updateAt 100 10 (Queue.range 1 10))    (Queue.range 1 10)              "updateAt 100 10"
+Test.equal (Queue.updateAt -5 10  (Queue.range 1 10))    (Queue.range 1 10)              "updateAt -5 10"
 
 Test.equal
     (Queue.mapi (fun i x -> (i,x)) (Queue.range 1 10))
@@ -1271,6 +1271,53 @@ Test.equal
     (Queue.foldBack2 (fun a b xs -> (a+b) :: xs) (Queue.empty) (Queue.range 10 20) [])
     ([])
     "foldBack2 2"
+
+let toSet =
+    let set =
+        Queue.concat (Queue [Queue.range 1 5; Queue.range 1 10; Queue.range 5 1; Queue [20;30]])
+        |> Queue.toSet
+
+    Test.equal (Set.count set) 12 "toSet 1"
+    Test.ok (Set.contains  1 set) "toSet 2"
+    Test.ok (Set.contains  2 set) "toSet 3"
+    Test.ok (Set.contains  3 set) "toSet 4"
+    Test.ok (Set.contains  4 set) "toSet 5"
+    Test.ok (Set.contains  5 set) "toSet 6"
+    Test.ok (Set.contains  6 set) "toSet 7"
+    Test.ok (Set.contains  7 set) "toSet 8"
+    Test.ok (Set.contains  8 set) "toSet 9"
+    Test.ok (Set.contains  9 set) "toSet 10"
+    Test.ok (Set.contains 10 set) "toSet 11"
+    Test.ok (Set.contains 20 set) "toSet 12"
+    Test.ok (Set.contains 30 set) "toSet 13"
+
+let toMap =
+    let queue = Queue ["Hallo"; "Welt"; "Du"; "Gehst"; "Unter"]
+
+    let m1 = Queue.toMap (fun x -> x, String.length x) queue
+    Test.equal (Map.count m1)            5       "toMap 1"
+    Test.equal (Map.tryFind "Hallo" m1) (Some 5) "toMap 2"
+    Test.equal (Map.tryFind "Welt"  m1) (Some 4) "toMap 3"
+    Test.equal (Map.tryFind "Du"    m1) (Some 2) "toMap 4"
+    Test.equal (Map.tryFind "Gehst" m1) (Some 5) "toMap 5"
+    Test.equal (Map.tryFind "Unter" m1) (Some 5) "toMap 6"
+
+    let m2 = Queue.toMap (fun x -> String.length x, x) queue
+    Test.equal (Map.count m2)      3             "toMap 7"
+    Test.equal (Map.tryFind 2 m2) (Some "Du")    "toMap 8"
+    Test.equal (Map.tryFind 4 m2) (Some "Welt")  "toMap 9"
+    Test.equal (Map.tryFind 5 m2) (Some "Unter") "toMap 10"
+
+    let m3 = Queue.toMapWithFold String.length (fun s x -> x :: s) [] queue
+    Test.equal (Map.count m3)      3              "toMap 11"
+    Test.equal (Map.tryFind 2 m3) (Some ["Du"])   "toMap 12"
+    Test.equal (Map.tryFind 4 m3) (Some ["Welt"]) "toMap 13"
+    Test.equal (Map.tryFind 5 m3) (Some ["Unter";"Gehst";"Hallo"]) "toMap 14"
+
+    Test.equal
+        (Queue.toMapGroupBy String.length queue)
+        (Map (Queue.groupBy String.length queue))
+        "toMap 15"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
