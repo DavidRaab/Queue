@@ -1242,6 +1242,36 @@ Test.equal
     (ValueSome (9, (Queue.append (Queue.range 1 8) (Queue.range 10 20))))
     "findRemoveBack 3"
 
+Test.equal
+    (Queue.sameLength (Queue.range 10 20) (Queue.range 1 5))
+    (Queue.range 10 14, Queue.range 1 5)
+    "sameLength 1"
+
+Test.equal
+    (Queue.sameLength (Queue.range 1 5) (Queue.range 10 20))
+    (Queue.range 1 5, Queue.range 10 14)
+    "sameLength 2"
+
+Test.equal
+    (Queue.sameLength (Queue.range 10 30) (Queue.range 10 30))
+    (Queue.range 10 30, Queue.range 10 30)
+    "sameLength 3"
+
+Test.equal
+    (Queue.sameLength Queue.empty (Queue.range 10 30))
+    (Queue.empty, Queue.empty)
+    "sameLength 4"
+
+Test.equal
+    (Queue.foldBack2 (fun a b xs -> (a+b) :: xs) (Queue [1..5]) (Queue.range 10 20) [])
+    ([17;19;21;23;25])
+    "foldBack2 1"
+
+Test.equal
+    (Queue.foldBack2 (fun a b xs -> (a+b) :: xs) (Queue.empty) (Queue.range 10 20) [])
+    ([])
+    "foldBack2 2"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

@@ -227,6 +227,15 @@ module Queue =
             | ValueNone           -> state
         loop (rev queue) state
 
+    let foldBack2 f queue1 queue2 (state:'State) =
+        let rec loop q1 q2 state =
+            match head q1, head q2 with
+            | ValueSome (x,q1), ValueSome (y,q2) -> loop q1 q2 (f x y state)
+            | ValueNone       , ValueNone        -> state
+            | ValueSome _     , ValueNone        -> state
+            | ValueNone       , ValueSome _      -> state
+        loop (rev queue1) (rev queue2) state
+
     let scanBack f queue (state:'State) =
         let folder x (state,states) =
             let newState = f x state
@@ -539,6 +548,11 @@ module Queue =
                 else queue
             | ValueNone -> empty
         loop queue
+
+    let sameLength (queue1:Queue<'a>) (queue2:Queue<'b>) =
+        if   queue1.Length = queue2.Length then (queue1, queue2)
+        elif queue1.Length > queue2.Length then (take queue2.Length queue1, queue2)
+        else                                    (queue1, take queue1.Length queue2)
 
     let distinct queue =
         let seen = System.Collections.Generic.Dictionary()
