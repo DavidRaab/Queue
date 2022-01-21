@@ -919,17 +919,17 @@ Test.equal
     "averageBy 2"
 
 Test.equal
-    (Queue.fold2i (fun i state x y -> Queue.add (i,x,y) state) Queue.empty (Queue.range 1 6) (Queue.range 10 15))
+    (Queue.foldi2 (fun i state x y -> Queue.add (i,x,y) state) Queue.empty (Queue.range 1 6) (Queue.range 10 15))
     (Queue [(0,1,10); (1,2,11); (2,3,12); (3,4,13); (4,5,14); (5,6,15)])
     "fold2i 1"
 
 Test.equal
-    (Queue.fold2i (fun i state x y -> Queue.add (i, x+y) state) Queue.empty (Queue.range 1 3) (Queue.range 10 15))
+    (Queue.foldi2 (fun i state x y -> Queue.add (i, x+y) state) Queue.empty (Queue.range 1 3) (Queue.range 10 15))
     (Queue [(0,11); (1,13); (2,15)])
     "fold2i 2"
 
 Test.equal
-    (Queue.ofList (Queue.fold3i (fun i state x y z -> (i,z,(x+y)) :: state) [] (Queue.range 1 3) (Queue [10;10]) (Queue ["A";"B";"C"])))
+    (Queue.ofList (Queue.foldi3 (fun i state x y z -> (i,z,(x+y)) :: state) [] (Queue.range 1 3) (Queue [10;10]) (Queue ["A";"B";"C"])))
     (Queue.empty |> Queue.add (1,"B",12) |> Queue.add (0,"A",11))
     "fold3i 1"
 

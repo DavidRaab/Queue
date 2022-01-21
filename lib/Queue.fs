@@ -350,13 +350,13 @@ module Queue =
         ) (0,state) queue
         |> snd
 
-    let fold2i f (state:'State) queue1 queue2 =
+    let foldi2 f (state:'State) queue1 queue2 =
         fold2 (fun (idx,state) x1 x2 ->
             (idx+1, f idx state x1 x2)
         ) (0,state) queue1 queue2
         |> snd
 
-    let fold3i f (state:'State) queue1 queue2 queue3 =
+    let foldi3 f (state:'State) queue1 queue2 queue3 =
         fold3 (fun (idx,state) x1 x2 x3 ->
             (idx+1, f idx state x1 x2 x3)
         ) (0,state) queue1 queue2 queue3
