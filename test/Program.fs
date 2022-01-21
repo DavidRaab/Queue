@@ -1211,6 +1211,37 @@ Test.notOk (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue.range
 Test.ok    (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue.range 1 4))    "any2 3"
 Test.ok    (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue [2;3;4;4] ))   "any2 4"
 Test.ok    (Queue.any2 (fun x y -> (x+y) % 2 = 0) (Queue.range 1 4) (Queue [2;3;4;4;20])) "any2 5"
+
+Test.equal
+    (Queue.findRemove (fun x -> x > 10) (Queue.range 1 20))
+    (ValueSome (11, (Queue.append (Queue.range 1 10) (Queue.range 12 20))))
+    "findRemove 1"
+
+Test.equal
+    (Queue.findRemove (fun x -> x > 100) (Queue.range 1 20))
+    (ValueNone)
+    "findRemove 2"
+
+Test.equal
+    (Queue.findRemove (fun x -> x < 10) (Queue.range 1 20))
+    (ValueSome (1, (Queue.range 2 20)))
+    "findRemove 3"
+
+Test.equal
+    (Queue.findRemoveBack (fun x -> x > 10) (Queue.range 1 20))
+    (ValueSome (20, Queue.range 1 19))
+    "findRemoveBack 1"
+
+Test.equal
+    (Queue.findRemoveBack (fun x -> x > 100) (Queue.range 1 20))
+    (ValueNone)
+    "findRemoveBack 2"
+
+Test.equal
+    (Queue.findRemoveBack (fun x -> x < 10) (Queue.range 1 20))
+    (ValueSome (9, (Queue.append (Queue.range 1 8) (Queue.range 10 20))))
+    "findRemoveBack 3"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

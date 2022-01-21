@@ -771,12 +771,26 @@ module Queue =
             | ValueNone -> ValueNone
         loop queue
 
+    let findRemove predicate queue =
+        let rec loop newQ queue =
+            match head queue with
+            | ValueSome (x,queue) ->
+                if   predicate x
+                then ValueSome (x, append newQ queue)
+                else loop (add x newQ) queue
+            | ValueNone -> ValueNone
+        loop empty queue
+
     let findBack predicate queue =
         fold (fun alreadyFound x ->
             if   predicate x
             then ValueSome x
             else alreadyFound
         ) ValueNone queue
+
+    let findRemoveBack predicate queue =
+        findRemove predicate (rev queue)
+        |> ValueOption.map (fun (x,queue) -> (x,rev queue))
 
     let findIndex predicate queue =
         let rec loop idx queue =
