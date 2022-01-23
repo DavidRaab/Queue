@@ -433,6 +433,11 @@ Test.equal
     (Queue.one (1,10,4) |> Queue.add (2,20,4))
     "Zip3"
 
+Test.equal
+    (Queue.zip4 (Queue [1;2;3]) (Queue [10;20]) (Queue [4;4;4;4]) (Queue [3;3;3]))
+    (Queue.one (1,10,4,3) |> Queue.add (2,20,4,3))
+    "Zip4"
+
 let countBy =
     let nameOccurrences = Queue.countBy id (Queue ["Hallo";"Hallo";"Welt";"Hallo"])
     Test.equal (Queue.length nameOccurrences) 2 "countBy 3"
@@ -1199,21 +1204,22 @@ let unzip =
     let xs = Queue.range   1  10
     let ys = Queue.range 100 250
     let zs = Queue ['A' .. 'Z']
-
-    let amount =
-        min
-            (Queue.length xs)
-            (min (Queue.length ys) (Queue.length zs))
+    let ws = Queue ["Hi"; "There"; "Wohoo"]
 
     Test.equal
         (Queue.unzip  (Queue.zip xs ys))
-        (Queue.take amount xs, Queue.take amount ys)
+        (Queue.take 10 xs, Queue.take 10 ys)
         "unzip"
 
     Test.equal
         (Queue.unzip3 (Queue.zip3 xs ys zs))
-        (Queue.take amount xs, Queue.take amount ys, Queue.take amount zs)
+        (Queue.take 10 xs, Queue.take 10 ys, Queue.take 10 zs)
         "unzip3"
+
+    Test.equal
+        (Queue.unzip4 (Queue.zip4 xs ys zs ws))
+        (Queue.take 3 xs, Queue.take 3 ys, Queue.take 3 zs, Queue.take 3 ws)
+        "unzip4"
 
 Test.equal (Queue.windowed -1 (Queue.range 1 10)) (Queue.empty)                            "windowed 1"
 Test.equal (Queue.windowed  0 (Queue.range 1 10)) (Queue.empty)                            "windowed 2"
