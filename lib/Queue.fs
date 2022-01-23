@@ -517,12 +517,11 @@ module Queue =
 
     let skip amount queue =
         let rec loop amount q =
-            if amount > 0 then
+            if amount = 0 then q
+            else
                 match head q with
                 | ValueSome (_,t) -> loop (amount-1) t
                 | ValueNone       -> empty
-            else
-                q
         if   amount <= 0
         then queue
         else loop amount queue
@@ -553,29 +552,25 @@ module Queue =
         else                                    (queue1, take queue1.Length queue2)
 
     let distinct queue =
-        let seen = System.Collections.Generic.Dictionary()
-        let mutable value = false
+        let seen = System.Collections.Generic.HashSet()
         let rec loop newQ queue =
             match head queue with
             | ValueSome(x,t) ->
-                value <- false
-                match seen.TryGetValue(x, &value) with
-                | true  ->                   loop newQ         t
-                | false -> seen.Add(x,true); loop (add x newQ) t
+                match seen.Contains(x) with
+                | true  ->                        loop  newQ        t
+                | false -> seen.Add(x) |> ignore; loop (add x newQ) t
             | ValueNone -> newQ
         loop empty queue
 
     let distinctBy (projection: 'a -> 'Key) queue =
-        let seen = System.Collections.Generic.Dictionary()
-        let mutable value = false
+        let seen = System.Collections.Generic.HashSet()
         let rec loop newQ queue =
             match head queue with
             | ValueSome(x,t) ->
                 let key = projection x
-                value <- false
-                match seen.TryGetValue(key, &value) with
-                | true  ->                     loop newQ         t
-                | false -> seen.Add(key,true); loop (add x newQ) t
+                match seen.Contains(key) with
+                | true  ->                          loop newQ         t
+                | false -> seen.Add(key) |> ignore; loop (add x newQ) t
             | ValueNone -> newQ
         loop empty queue
 
@@ -922,7 +917,7 @@ module Queue =
             | ValueNone -> failwith "Cannot happen"
 
     let removeAt index queue =
-        if index < 0 || index > lastIndex queue
+        if   index < 0 || index > lastIndex queue
         then queue
         else
             append
@@ -930,7 +925,7 @@ module Queue =
                 (slice (index+1) (lastIndex queue) queue)
 
     let removeManyAt index count queue =
-        if index < 0 || index > lastIndex queue || count <= 0
+        if   index < 0 || index > lastIndex queue || count <= 0
         then queue
         else
             append
