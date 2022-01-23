@@ -2,8 +2,7 @@
 
 A **Queue** is a *first-in-first-out* data-structure. It is fast O(1) to add things at the end of a **Queue**. The immutable **List** provided by F# is a *first-in-last-out* data-structure or a **Stack**.
 
-This **Queue** implements all the functions you know from the **List** module with a few more and some changes. This
-data-structure therefore is a replacement for **List**.
+This **Queue** implements all the functions you know from the **List** module with a few more and some changes. **Queue** therefore is a replacement for **List**.
 
 # Design Philosophy / Why you want to Use
 
