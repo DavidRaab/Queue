@@ -73,13 +73,12 @@ On top, there are additional functions you don't find in other modules. To name 
 * `Queue.mapReduce`
 * `Queue.mapFilter`
 * `Queue.filterMap`
-* `Queue.toSet`
-* `Queue.toMap`
-* `Queue.toMapWithFold`
+* `Queue.toSet`, `Queue.toMap`, `Queue.toMapWithFold`, `Queue.toMapGroupBy`
 * `Queue.sliceGrow`, `Queue.insertAtGrow`, `Queue.updateAtGrow`, `Queue.insertManyAtGrow`
 * `Queue.findRemove`
 * `Queue.intersperse`
 * `Queue.permutations`
+* `Queue.itemMany`
 
 Because of the implementation of the Queue some operations have a better performance.
 

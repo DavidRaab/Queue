@@ -519,6 +519,14 @@ module Queue =
             | ValueNone -> ValueNone
         loop 0 queue
 
+    let itemMany idxs queue =
+        let mutable result = empty
+        for idx in idxs do
+            match item idx queue with
+            | ValueSome x -> result <- add x result
+            | ValueNone   -> ()
+        result
+
     let indexed queue =
         mapi (fun i x -> (i,x)) queue
 
