@@ -52,10 +52,10 @@ return an `ValueOption` instead.
 // Throws an ArgumentException
 let xs = List.reduce (fun x y -> x + y) []
 
-// Returns: ValueNone
+// ValueNone
 let ys = Queue.reduce (fun x y -> x + y) Queue.empty
 
-// Returns: (ValueSome 55)
+// ValueSome 55
 let zs = Queue.reduce (fun x y -> x + y) (Queue.range 1 10)
 ```
 
