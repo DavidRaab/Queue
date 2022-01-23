@@ -637,6 +637,11 @@ Test.equal
     (Queue [0;1;3;6;10;15])
     "scan 2"
 
+Test.equal
+    (Queue.scan (fun sum x -> sum + x) 0 (Queue.empty))
+    (Queue [0])
+    "scan 3"
+
 Test.equal (Queue.last (Queue.range 1 10)) (ValueSome 10) "last 1"
 Test.equal (Queue.last (Queue.empty))      (ValueNone)    "last 2"
 
@@ -920,19 +925,45 @@ Test.equal
     "averageBy 2"
 
 Test.equal
+    (Queue.fold2 (fun state x y -> Queue.add (x+y) state) Queue.empty (Queue [12;3;-10]) (Queue [8;7;10;3]))
+    (Queue [20;10;0])
+    "fold2"
+
+Test.equal
+    (Queue.fold3 (fun state x y z -> Queue.add (x+y+z) state) Queue.empty (Queue [12;3;-10]) (Queue [8;7;10;3]) (Queue [1;2]))
+    (Queue [21;12])
+    "fold3"
+
+Test.equal
+    (Queue.fold4 (fun state x y z w -> Queue.add (x+y+z+w) state) Queue.empty (Queue [12;3;-10]) (Queue [8;7;10;3]) (Queue [1;2]) (Queue [-5;3]))
+    (Queue [16;15])
+    "fold4"
+
+Test.equal
     (Queue.foldi2 (fun i state x y -> Queue.add (i,x,y) state) Queue.empty (Queue.range 1 6) (Queue.range 10 15))
     (Queue [(0,1,10); (1,2,11); (2,3,12); (3,4,13); (4,5,14); (5,6,15)])
-    "fold2i 1"
+    "foldi2 1"
 
 Test.equal
     (Queue.foldi2 (fun i state x y -> Queue.add (i, x+y) state) Queue.empty (Queue.range 1 3) (Queue.range 10 15))
     (Queue [(0,11); (1,13); (2,15)])
-    "fold2i 2"
+    "foldi2 2"
 
 Test.equal
     (Queue.ofList (Queue.foldi3 (fun i state x y z -> (i,z,(x+y)) :: state) [] (Queue.range 1 3) (Queue [10;10]) (Queue ["A";"B";"C"])))
     (Queue.empty |> Queue.add (1,"B",12) |> Queue.add (0,"A",11))
-    "fold3i 1"
+    "foldi3 1"
+
+Test.equal
+    (Queue.ofList
+        (Queue.foldi4 (fun i state x y z w -> (i,z,(x+y+w)) :: state)
+            []                    // state
+            (Queue.range 1 3)     // x
+            (Queue [10;10])       // y
+            (Queue ["A";"B";"C"]) // z
+            (Queue [1;1])))       // w
+    (Queue.empty |> Queue.add (1,"B",13) |> Queue.add (0,"A",12))
+    "foldi4 1"
 
 Test.equal
     (Queue.ofList (List.fold  (fun l x -> x :: l)        []          [1..10]))

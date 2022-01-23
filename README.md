@@ -68,7 +68,7 @@ On top, there are additional functions you don't find in other modules. To name 
 
 * `Queue.map3`, `Queue.map4`
 * `Queue.lift2`, `Queue.lift3`, `Queue.lift4`
-* `Queue.fold3`, `Queue.foldi`, `Queue.foldi2`, `Queue.foldi3`
+* `Queue.fold3`, `Queue.fold4`, `Queue.foldi`, `Queue.foldi2`, `Queue.foldi3`, `Queue.foldi4`
 * `Queue.mapFold` (it works different to `List.mapFold`)
 * `Queue.mapReduce`
 * `Queue.mapFilter`

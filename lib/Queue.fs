@@ -1,6 +1,6 @@
 namespace Queue
 
-type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
+type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(queue,added,length) =
     static member Empty : Queue<'a> = Queue([],[],0)
 
     new(sequence:seq<'a>) =
@@ -12,21 +12,21 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
             let added = Seq.fold (fun xs x -> amount <- amount + 1; x :: xs) [] sequence
             Queue([],added,amount)
 
-    member _.Queue : list<'a> = q
-    member _.Added : list<'a> = a
-    member _.Length = length
+    member _.Queue  : list<'a> = queue
+    member _.Added  : list<'a> = added
+    member _.Length : int      = length
 
     member _.Head () : voption<'a * Queue<'a>> =
         if length > 1 then
-            match q,a with
+            match queue,added with
                 | x::xs, a -> ValueSome (x, Queue(xs,a,(length-1)))
                 |    [], a ->
                     let newQ = List.rev a
                     ValueSome (List.head newQ, Queue((List.tail newQ),[],(length-1)))
         elif length = 1 then
-            if   List.isEmpty q
-            then ValueSome (List.head a, Queue([],[],0))
-            else ValueSome (List.head q, Queue([],[],0))
+            if   List.isEmpty queue
+            then ValueSome (List.head added, Queue([],[],0))
+            else ValueSome (List.head queue, Queue([],[],0))
         else
             ValueNone
 
@@ -91,7 +91,7 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(q,a,length) =
                     | ValueSome _, ValueNone   ->  1
                     | ValueNone  , ValueSome _ -> -1
                 loop this other
-            | _ -> failwith "Comparison of two different types"
+            | _ -> invalidArg "other" "other is not of same type."
 
 module Queue =
     // Creation of Queue
@@ -214,11 +214,21 @@ module Queue =
             | _                                                          -> state
         loop state queue1 queue2 queue3
 
+    let fold4 f (state: 'State) queue1 queue2 queue3 queue4 =
+        let rec loop state q1 q2 q3 q4 =
+            match head q1, head q2, head q3, head q4 with
+            | ValueSome (x1,q1), ValueSome (x2,q2), ValueSome (x3,q3), ValueSome (x4,q4) -> loop (f state x1 x2 x3 x4) q1 q2 q3 q4
+            | _                                                                          -> state
+        loop state queue1 queue2 queue3 queue4
+
     let scan f (state:'State) queue =
-        let folder (state,states) x =
-            let newState = f state x
-            (newState, add newState states)
-        snd (fold folder (state,one state) queue)
+        let mutable states = empty
+        let finalState =
+            fold (fun state x ->
+                states <- add state states
+                f state x
+            ) state queue
+        add finalState states
 
     let foldBack f queue (state:'State) =
         let rec loop queue state =
@@ -237,10 +247,13 @@ module Queue =
         loop (rev queue1) (rev queue2) state
 
     let scanBack f queue (state:'State) =
-        let folder x (state,states) =
-            let newState = f x state
-            (newState, add newState states)
-        snd (foldBack folder queue (state,one state))
+        let mutable states = empty
+        let finalState =
+            foldBack (fun x state ->
+                states <- add state states
+                f x state
+            ) queue state
+        add finalState states
 
     let apply fq xq =
         let rec loop fq xq state =
@@ -352,22 +365,32 @@ module Queue =
         ValueOption.map snd (fold folder ValueNone queue)
 
     let foldi f (state:'State) queue =
-        fold (fun (idx,state) x ->
-            (idx+1, f idx state x)
-        ) (0,state) queue
-        |> snd
+        let mutable idx = -1
+        fold (fun state x ->
+            idx <- idx + 1
+            f idx state x
+        ) state queue
 
     let foldi2 f (state:'State) queue1 queue2 =
-        fold2 (fun (idx,state) x1 x2 ->
-            (idx+1, f idx state x1 x2)
-        ) (0,state) queue1 queue2
-        |> snd
+        let mutable idx = -1
+        fold2 (fun state x1 x2 ->
+            idx <- idx + 1
+            f idx state x1 x2
+        ) state queue1 queue2
 
     let foldi3 f (state:'State) queue1 queue2 queue3 =
-        fold3 (fun (idx,state) x1 x2 x3 ->
-            (idx+1, f idx state x1 x2 x3)
-        ) (0,state) queue1 queue2 queue3
-        |> snd
+        let mutable idx = -1
+        fold3 (fun state x1 x2 x3 ->
+            idx <- idx + 1
+            f idx state x1 x2 x3
+        ) state queue1 queue2 queue3
+
+    let foldi4 f (state:'State) queue1 queue2 queue3 queue4 =
+        let mutable idx = -1
+        fold4 (fun state x1 x2 x3 x4 ->
+            idx <- idx + 1
+            f idx state x1 x2 x3 x4
+        ) state queue1 queue2 queue3 queue4
 
     let mapFilter mapper predicate queue =
         fold (fun q x ->
@@ -407,14 +430,18 @@ module Queue =
         loop empty queue1 queue2 queue3 queue4
 
     let mapi f queue =
-        let folder (idx,q) x =
-            idx+1, add (f idx x) q
-        snd (fold folder (0,empty) queue)
+        let mutable idx = -1
+        let folder q x =
+            idx <- idx + 1
+            add (f idx x) q
+        fold folder empty queue
 
     let mapi2 f queue1 queue2 =
-        let folder (idx,q) x y =
-            idx+1, add (f idx x y) q
-        snd (fold2 folder (0,empty) queue1 queue2)
+        let mutable idx = -1
+        let folder q x y =
+            idx <- idx + 1
+            add (f idx x y) q
+        fold2 folder empty queue1 queue2
 
     let lift2 f queue1 queue2 =
         queue1 |> bind (fun x1 ->
