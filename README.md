@@ -101,7 +101,7 @@ let ss = Queue (seq {1..10})
 let ms1 = Queue       (Map [(1,"Hi"); (10,"There")]
 
 // Queue<int * string>
-let ms1 = Queue.ofMap (Map [(1,"Hi"); (10,"There")]
+let ms2 = Queue.ofMap (Map [(1,"Hi"); (10,"There")]
 ```
 
 For usage, currently, it is best to just look into the test file in [../test/Program.fs](https://github.com/DavidRaab/Queue/blob/master/test/Program.fs)
