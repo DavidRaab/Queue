@@ -1,27 +1,47 @@
 # F#: Immutable Queue
 
-A **Queue** is a *first-in-first-out* data-structure. It is fast O(1) to add things at the end of a **Queue**. The immutable **List** provided by F# is a *first-in-last-out* data-structure or a **Stack**.
+A **Queue** is a *first-in-first-out* data-structure. It provides fast appending O(1) to the end of a **Queue** but also
+fast prepeding O(1) to a **Queue**.
 
-This **Queue** implements all the functions you know from the **List** module with a few more and some changes. **Queue** therefore is a replacement for **List**.
+The immutable **List** provided by F# is a *first-in-last-out* data-structure or a **Stack** and only provides fast prepeding O(1).
 
-# Design Philosophy / Why you want to Use
+This **Queue** implements all the functions you know from the **List** module with a few more and some changes. **Queue** is designed as a replacement for **List**, but not as a drop-in replacement.
+
+# Design Philosophy / Why you want to use Queue
 
 The Design Philosophy of `Queue` opposed to `List` is:
 
 1. To never throw an Exception.
 2. Use `ValueOption` instead of `Option`.
 
-To achieve the first goal some functions are changed to return a `ValueOption` instead. In `List` for example you have `List.find` and `List.tryFind`. In this module there is only `Queue.find` and it will return an `ValueOption` by default. There is no *find* version that will throw an exception.
+To achieve the first goal some functions are changed to return a `ValueOption`, provide reasonable results like
+returning an empty **Queue** or provide input checking for arguments.
+
+List already provides some of these. For example you have `List.find` and `List.tryFind`. In this module there
+is only `Queue.find` and it will return a `ValueOption` by default. There is no *find* version that will throw
+an exception.
 
 But the `List` module still have a lot of functions that throw exceptions in various ways with
 no equivalent *try* function.
 
 ```fsharp
-// Throws an ArgumentException
-let xs = List.map2 (fun x y -> x + y) [1..10] [1..8]
+// Throws ArgumentException
+let as = List.map2 (fun x y -> x + y) [1..10] [1..8]
 
-// Returns: Queue [2;4;6;8;10;12;14;16]
-let ys = Queue.map2 (fun x y -> x + y) (Queue.range 1 10) (Queue.range 1 8)
+// Queue [2;4;6;8;10;12;14;16]
+let bs = Queue.map2 (fun x y -> x + y) (Queue.range 1 10) (Queue.range 1 8)
+
+// Throws ArgumentException
+let cs = List.tail []
+
+// Queue.empty
+let ds = Queue.tail Queue.empty
+
+// Throws InvalidOperationException
+let es = List.take 5 [1;2;3]
+
+// Queue [1;2;3]
+let fs = Queue.take 5 (Queue [1;2;3])
 ```
 
 Functions are either changed to return something useful like `Queue.map2` that only iterates
@@ -39,11 +59,11 @@ let ys = Queue.reduce (fun x y -> x + y) Queue.empty
 let zs = Queue.reduce (fun x y -> x + y) (Queue.range 1 10)
 ```
 
-To get an overview. Currently, the following `List` functions that have no `try` alternative
-can still throw an exception: `average`, `averageBy`, `chunkBySize`, `exactlyOne`, `except`, `exists2`, `forall2`,
+As an overview. There are still these function that can throw exceptions and have no *try* equivalent
+you must consider: `average`, `averageBy`, `chunkBySize`, `exactlyOne`, `except`, `exists2`, `forall2`,
 `head`, `init`, `insertAt`, `insertManyAt`, `item`, `last`, `max`, `maxBy`, `min`,
 `minBy`, `permute`, `reduce`, `reduceBack`, `removeAt`, `removeManyAt`, `skip`, `splitAt`, `splitInto`, `tail`,
-`take`, `transpose`, `updateAt`, `windowed`. None of those throw an exception in this module!
+`take`, `transpose`, `updateAt`, `windowed`. None of those throw an exception in the **Queue** implementation!
 
 On top, there are additional functions you don't find in other modules. To name the most important.
 
@@ -64,12 +84,12 @@ On top, there are additional functions you don't find in other modules. To name 
 
 Because of the implementation of the Queue some operations have a better performance.
 
-* Adding `Queue.add` and Prepending `Queue.prepend` are both O(1)
+* Adding `Queue.add` and prepending `Queue.prepend` are both O(1)
 * `Queue.rev` is O(1)
 * `Queue.length` is O(1)
 * `Queue.append` is O(N) of the smaller list.
 
-`Queue` also implements Comparision, Equality and IEnumerable (Seq) so you can compare two `Queue`s, traverse it with the `for` keyword or use it wherever a `seq` is wanted.
+`Queue` also implements Comparision, Equality and IEnumerable (Seq) so you can compare two `Queue`s, traverse it with the `for` keyword or pass it wherever a `seq` is needed.
 
 You can also transform every sequence to a Queue by just writing `Queue` in front of it. Like you are used with `Map` or `Set`.
 
@@ -93,8 +113,7 @@ The internal data-structure is quite easy to understand. It keeps track of three
 
 Added items to the Queue are added to a List named `Added`. This way we can provide O(1) for adding elements.
 
-When you traverse the Queue it will traverse the internal `Queue` list that has the items in Queue-order. If that is empty, it will reverse the `Added` list
-and stores the result into `Queue`. This way traversing is amortized O(1). Meaning: Most operations are O(1) and some are O(N).
+When you traverse the Queue it will traverse the internal `Queue` list that has the items in Queue-order. If that is empty, it will reverse the `Added` list once and store the result into `Queue`. This way traversing is amortized O(1). Meaning: Most operations are O(1) and some are O(N).
 
 So if you do the following:
 
