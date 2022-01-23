@@ -51,8 +51,9 @@ Test.equal (Queue.range 10 1)    (Queue.ofList (List.rev [1..10])) "range 2"
 Test.equal (Queue.range 10 1)    (Queue.rangeWithStep 10 -1 1)     "range 4"
 Test.equal (Queue.range 10 1)    (Queue.ofList [10..-1..1])        "range 5"
 Test.equal (Queue.range 10 10)   (Queue.ofList [10..10])           "range 6"
-Test.ok (eqFloats (Queue.range 1.5 4.4) (Queue [1.5; 2.5; 3.5]))   "range 7"
-Test.notEqual (Queue.range 10 1) (Queue.ofList [10..1])            "range 8"
+
+Test.ok       (eqFloats (Queue.range 1.5 4.4) (Queue [1.5; 2.5; 3.5])) "range 7"
+Test.notEqual (Queue.range 10 1) (Queue.ofList [10..1])                "range 8"
 
 Test.equal (Queue.rangeWithStep 1     2 10) (Queue.ofList [1 ..   2..10]) "rangeWithStep 1"
 Test.equal (Queue.rangeWithStep 1   100 10) (Queue.ofList [1 .. 100..10]) "rangeWithStep 2"
@@ -75,13 +76,13 @@ Test.equal
     "add"
 
 Test.equal
-    (Queue.append (Queue.one 10) (Queue.range 1 3) |> Queue.tail)
-    (Queue.range 1 3)
+    (Queue.append (Queue.range 1 3) (Queue.range 4 6) |> Queue.tail)
+    (Queue.range 2 6)
     "append 1"
 
 Test.equal
-    (Queue.append (Queue.one 1) (Queue.range 2 5))
-    (Queue.one 1 ++ Queue.range 2 5)
+    (Queue.append (Queue.range 1 3) (Queue.range 4 6))
+    (Queue.range 1 3 ++ Queue.range 4 6)
     "append ++"
 
 Test.equal    (Queue.range 1 10) (Queue.range 1 10) "Two equal Queues"

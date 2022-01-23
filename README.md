@@ -26,22 +26,22 @@ no equivalent *try* function.
 
 ```fsharp
 // Throws ArgumentException
-let as = List.map2 (fun x y -> x + y) [1..10] [1..8]
+let bs = List.map2 (fun x y -> x + y) [1..10] [1..8]
 
 // Queue [2;4;6;8;10;12;14;16]
-let bs = Queue.map2 (fun x y -> x + y) (Queue.range 1 10) (Queue.range 1 8)
+let cs = Queue.map2 (fun x y -> x + y) (Queue.range 1 10) (Queue.range 1 8)
 
 // Throws ArgumentException
-let cs = List.tail []
+let ds = List.tail []
 
 // Queue.empty
-let ds = Queue.tail Queue.empty
+let es = Queue.tail Queue.empty
 
 // Throws InvalidOperationException
-let es = List.take 5 [1;2;3]
+let fs = List.take 5 [1;2;3]
 
 // Queue [1;2;3]
-let fs = Queue.take 5 (Queue [1;2;3])
+let gs = Queue.take 5 (Queue [1;2;3])
 ```
 
 Functions are either changed to return something useful like `Queue.map2` that only iterates
@@ -93,15 +93,15 @@ Because of the implementation of the Queue some operations have a better perform
 You can also transform every sequence to a Queue by just writing `Queue` in front of it. Like you are used with `Map` or `Set`.
 
 ```fsharp
-let ls = Queue [1..10]
-let as = Queue [|1..10|]
-let ss = Queue (seq {1..10})
+let bs = Queue [1..10]
+let cs = Queue [|1..10|]
+let ds = Queue (seq {1..10})
 
 // Queue<KeyValuePair<int,string>>
-let ms1 = Queue       (Map [(1,"Hi"); (10,"There")]
+let m1 = Queue       (Map [(1,"Hi"); (10,"There")]
 
 // Queue<int * string>
-let ms2 = Queue.ofMap (Map [(1,"Hi"); (10,"There")]
+let m2 = Queue.ofMap (Map [(1,"Hi"); (10,"There")]
 ```
 
 For usage, currently, it is best to just look into the test file in [../test/Program.fs](https://github.com/DavidRaab/Queue/blob/master/test/Program.fs)
@@ -117,19 +117,21 @@ When you traverse the Queue it will traverse the internal `Queue` list that has 
 So if you do the following:
 
 ```fsharp
-let as = Queue.range 1 10
-let bs = Queue.add 11
-let cs = Queue.skip 3
-let ds = Queue.add 12
-let es = Queue.prepend 3
+let bs = Queue.range 1 10
+let cs = Queue.add 11 bs
+let ds = Queue.skip 3 cs
+let es = ds |> Queue.add 12 |> Queue.add 13 |> Queue.add 14
+let fs = Queue.prepend 3 es
+let gs = Queue.skip 3 fs
 ```
 
 The internal data-structure would look like these:
 
 ```fsharp
-let as = Queue([], [10;9;8;7;6;5;4;3;2;1], 10)
-let bs = Queue([], [11;10;9;8;7;6;5;4;3;2;1], 11)
-let cs = Queue([4;5;6;7;8;9;10;11], [], 8)
-let ds = Queue([4;5;6;7;8;9;10;11], [12], 9)
-let es = Queue([3;4;5;6;7;8;9;10;11], [12], 10)
+let bs = Queue([], [10;9;8;7;6;5;4;3;2;1], 10)
+let cs = Queue([], [11;10;9;8;7;6;5;4;3;2;1], 11)
+let ds = Queue([4;5;6;7;8;9;10;11], [], 8)
+let es = Queue([4;5;6;7;8;9;10;11], [14;13;12], 11)
+let fs = Queue([3;4;5;6;7;8;9;10;11], [14;13;12], 12)
+let gs = Queue([6;7;8;9;10;11], [14;13;12], 9)
 ```
