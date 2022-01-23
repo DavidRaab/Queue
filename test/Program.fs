@@ -1002,6 +1002,16 @@ Test.equal
     "mapi2"
 
 Test.equal
+    (Queue.mapi3 (fun idx x y z -> idx, x+y+z) (Queue [1;3;5]) (Queue [100;200]) (Queue [10;50]))
+    (Queue [(0,111); (1,253)])
+    "mapi3"
+
+Test.equal
+    (Queue.mapi4 (fun idx x y z w -> idx, x+y+z+w) (Queue [1;3;5;9]) (Queue [100;200;300]) (Queue [10;50;70]) (Queue [7;3]))
+    (Queue [(0,118); (1,256)])
+    "mapi4"
+
+Test.equal
     (Queue.pairwise (Queue.range 1 5))
     (Queue [(1,2); (2,3); (3,4); (4,5)])
     "pairwise 1"

@@ -311,7 +311,7 @@ module Queue =
     let last (queue : Queue<'a>) =
         match queue.Queue, queue.Added with
         | [],[]      -> ValueNone
-        | r ,[]      -> ValueSome (List.last r)
+        | q ,[]      -> ValueSome (List.last q)
         | _ ,last::a -> ValueSome last
 
     let mapReduce mapper reducer queue =
@@ -442,6 +442,20 @@ module Queue =
             idx <- idx + 1
             add (f idx x y) q
         fold2 folder empty queue1 queue2
+
+    let mapi3 f queue1 queue2 queue3 =
+        let mutable idx = -1
+        let folder q x y z =
+            idx <- idx + 1
+            add (f idx x y z) q
+        fold3 folder empty queue1 queue2 queue3
+
+    let mapi4 f queue1 queue2 queue3 queue4 =
+        let mutable idx = -1
+        let folder q x y z w =
+            idx <- idx + 1
+            add (f idx x y z w) q
+        fold4 folder empty queue1 queue2 queue3 queue4
 
     let lift2 f queue1 queue2 =
         queue1 |> bind (fun x1 ->
