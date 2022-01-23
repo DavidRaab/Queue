@@ -820,12 +820,18 @@ module Queue =
             | ValueNone -> ValueNone
         loop empty queue
 
-    let findBack predicate queue =
-        fold (fun alreadyFound x ->
-            if   predicate x
-            then ValueSome x
-            else alreadyFound
-        ) ValueNone queue
+    let findBack predicate (queue:Queue<'a>) =
+        let rec loop first remaining =
+            match first with
+            | x::xs ->
+                if   predicate x
+                then ValueSome x
+                else loop xs remaining
+            | [] ->
+                if   List.isEmpty remaining
+                then ValueNone
+                else loop (List.rev remaining) []
+        loop queue.Added queue.Queue
 
     let findRemoveBack predicate queue =
         findRemove predicate (rev queue)
