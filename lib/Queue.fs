@@ -193,11 +193,11 @@ module Queue =
     let fold f (state:'State) (queue : Queue<'a>) =
         let rec loop first remaining state =
             match first with
+            | x::xs -> loop xs remaining (f state x)
             | []    ->
                 if   List.isEmpty remaining
                 then state
                 else loop remaining [] state
-            | x::xs -> loop xs remaining (f state x)
         loop queue.Queue (List.rev queue.Added) state
 
     let fold2 f (state:'State) queue1 queue2 =
@@ -211,7 +211,7 @@ module Queue =
         let rec loop state q1 q2 q3 =
             match head q1, head q2, head q3 with
             | ValueSome (x1, q1), ValueSome (x2, q2), ValueSome (x3, q3) -> loop (f state x1 x2 x3) q1 q2 q3
-            | _ -> state
+            | _                                                          -> state
         loop state queue1 queue2 queue3
 
     let scan f (state:'State) queue =
@@ -255,9 +255,7 @@ module Queue =
         fold (fun state x -> addMany (f x) state) empty queue
 
     let map f queue =
-        let folder q x =
-            add (f x) q
-        fold folder empty queue
+        fold (fun q x -> add (f x) q) empty queue
 
 
     // Side-Effects

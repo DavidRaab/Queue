@@ -1334,6 +1334,11 @@ Test.equal
     (Queue.range 1 10)
     "Queue constructor from List"
 
+Test.equal
+    (Queue (seq {1..10}))
+    (Queue.range 1 10)
+    "Queue constructor from Seq"
+
 // let fromMap =
 //     let q = Queue (Map [(1,"Hallo"); (2,"Trouble"); (10,"Rumble")])
 
