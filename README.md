@@ -43,7 +43,7 @@ To get an overview. Currently, the following `List` functions that have no `try`
 can still throw an exception: `average`, `averageBy`, `chunkBySize`, `exactlyOne`, `except`, `exists2`, `forall2`,
 `head`, `init`, `insertAt`, `insertManyAt`, `item`, `last`, `max`, `maxBy`, `min`,
 `minBy`, `permute`, `reduce`, `reduceBack`, `removeAt`, `removeManyAt`, `skip`, `splitAt`, `splitInto`, `tail`,
-`take`, `transpose`, `updateAt`, `windowed`.
+`take`, `transpose`, `updateAt`, `windowed`. None of those throw an exception in this module!
 
 On top, there are additional functions you don't find in other modules. To name the most important.
 
