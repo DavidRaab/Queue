@@ -1319,6 +1319,27 @@ let toMap =
         (Map (Queue.groupBy String.length queue))
         "toMap 15"
 
+Test.equal
+    (Queue (Set [1..10]))
+    (Queue.range 1 10)
+    "Queue constructor from Set"
+
+Test.equal
+    (Queue (Array.create 10 0))
+    (Queue.repeat 10 0)
+    "Queue constructor from Array"
+
+Test.equal
+    (Queue [1..10])
+    (Queue.range 1 10)
+    "Queue constructor from List"
+
+// let fromMap =
+//     let q = Queue (Map [(1,"Hallo"); (2,"Trouble"); (10,"Rumble")])
+
+//     Test.equal (Queue.length q) 3 "Queue from Map Length"
+//     Test.equal (Queue.find (fun x -> fst x = 1) q) (ValueSome (1,"Hallo")) "Queue from Map 1"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
