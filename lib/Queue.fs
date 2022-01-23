@@ -980,10 +980,21 @@ module Queue =
     let ofList list : Queue<'a> =
         Queue(list, [], List.length list)
 
+    let ofSet set : Queue<'a> =
+        Queue([], Set.toList set, Set.count set)
+
+    let ofMap map : Queue<'a * 'b> =
+        let mutable amount = 0
+        let added = Map.fold (fun l key value ->
+            amount <- amount + 1
+            (key,value) :: l) [] map
+        Queue([],added,amount)
+
     let ofSeq (seq:seq<'a>) : Queue<'a> =
         match seq with
         | :? array<'a> as xs -> ofArray xs
         | :? list<'a>  as xs -> ofList xs
+        | :? Set<'a>   as xs -> ofSet xs
         | _                  -> Seq.fold (fun q x -> q.Add x) Queue.Empty seq
 
     let toSeq (queue: Queue<'a>) =

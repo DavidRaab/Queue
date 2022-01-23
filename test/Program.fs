@@ -1320,7 +1320,7 @@ let toMap =
         "toMap 15"
 
 Test.equal
-    (Queue (Set [1..10]))
+    (Queue (Set [10;9;5;1;2;3;4;8;7;6]))
     (Queue.range 1 10)
     "Queue constructor from Set"
 
@@ -1339,11 +1339,25 @@ Test.equal
     (Queue.range 1 10)
     "Queue constructor from Seq"
 
-// let fromMap =
-//     let q = Queue (Map [(1,"Hallo"); (2,"Trouble"); (10,"Rumble")])
+let ofMap =
+    let q = Queue.ofMap (Map [(1,"Hallo"); (2,"Trouble"); (10,"Rumble")])
 
-//     Test.equal (Queue.length q) 3 "Queue from Map Length"
-//     Test.equal (Queue.find (fun x -> fst x = 1) q) (ValueSome (1,"Hallo")) "Queue from Map 1"
+    let search x from = fst from = x
+    Test.equal (Queue.length q) 3 "ofMap Length"
+    Test.equal (Queue.find (search  1) q) (ValueSome ( 1,"Hallo"))   "ofMap 1"
+    Test.equal (Queue.find (search  2) q) (ValueSome ( 2,"Trouble")) "ofMap 2"
+    Test.equal (Queue.find (search 10) q) (ValueSome (10,"Rumble"))  "ofMap 3"
+
+let toQueuefromMap =
+    let q = Queue (Map [(1,"Hallo"); (2,"Trouble"); (10,"Rumble")])
+
+    let kv k v = System.Collections.Generic.KeyValuePair(k,v)
+    let search x (KeyValue (key,_)) = key = x
+
+    Test.equal (Queue.length q) 3 "Queue from Map Length"
+    Test.equal (Queue.find (search  1) q) (ValueSome (kv  1 "Hallo"))   "Queue from Map 1"
+    Test.equal (Queue.find (search  2) q) (ValueSome (kv  2 "Trouble")) "Queue from Map 2"
+    Test.equal (Queue.find (search 10) q) (ValueSome (kv 10 "Rumble"))  "Queue from Map 3"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
