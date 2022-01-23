@@ -59,11 +59,10 @@ let ys = Queue.reduce (fun x y -> x + y) Queue.empty
 let zs = Queue.reduce (fun x y -> x + y) (Queue.range 1 10)
 ```
 
-As an overview. There are still these function that can throw exceptions and have no *try* equivalent
-you must consider: `average`, `averageBy`, `chunkBySize`, `exactlyOne`, `except`, `exists2`, `forall2`,
+As an overview. There are still these `List` functions that can throw exceptions and have no *try* equivalent you must consider when you use a `List`: `average`, `averageBy`, `chunkBySize`, `exactlyOne`, `except`, `exists2`, `forall2`,
 `head`, `init`, `insertAt`, `insertManyAt`, `item`, `last`, `max`, `maxBy`, `min`,
 `minBy`, `permute`, `reduce`, `reduceBack`, `removeAt`, `removeManyAt`, `skip`, `splitAt`, `splitInto`, `tail`,
-`take`, `transpose`, `updateAt`, `windowed`. None of those throw an exception in the **Queue** implementation!
+`take`, `transpose`, `updateAt`, `windowed`. None of those throw an exception in the `Queue` implementation!
 
 On top, there are additional functions you don't find in other modules. To name the most important.
 
