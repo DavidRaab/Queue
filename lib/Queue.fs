@@ -775,9 +775,7 @@ module Queue =
         let rec loop q1 q2 =
             match head q1, head q2 with
             | ValueSome (x,q1), ValueSome (y,q2) -> if predicate x y then true else loop q1 q2
-            | ValueSome (x,q1), ValueNone        -> false
-            | ValueNone       , ValueSome (y,q2) -> false
-            | ValueNone       , ValueNone        -> false
+            | _                                  -> false
         loop queue1 queue2
 
     let countBy (projection: 'a -> 'Key) queue =
