@@ -479,6 +479,13 @@ module Queue =
             else       ts, add x fs
         ) (empty,empty) queue
 
+    let partitionMap mapper queue =
+        fold (fun (ls,rs) x ->
+            match mapper x with
+            | Choice1Of2 x -> (add x ls, rs)
+            | Choice2Of2 x -> (ls, add x rs)
+        ) (empty,empty) queue
+
     let compare (queue1:Queue<'a>) (queue2:Queue<'a>) =
         LanguagePrimitives.GenericComparison queue1 queue2
 
@@ -556,6 +563,13 @@ module Queue =
             | ValueSome x -> add x q
             | ValueNone   -> q
         fold folder empty queue
+
+    let choosei f queue =
+        let folder i q x =
+            match f i x with
+            | ValueSome x -> add x q
+            | ValueNone   -> q
+        foldi folder empty queue
 
     let contains x (queue:Queue<'a>) =
         List.contains x queue.Queue || List.contains x queue.Added

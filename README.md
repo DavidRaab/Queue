@@ -62,13 +62,16 @@ let zs = Queue.reduce (fun x y -> x + y) (Queue.range 1 10)
 As an overview. There are still these `List` functions that can throw exceptions and have no *try* equivalent you must consider when you use a `List`: `average`, `averageBy`, `chunkBySize`, `exactlyOne`, `except`, `exists2`, `forall2`,
 `head`, `init`, `insertAt`, `insertManyAt`, `item`, `last`, `max`, `maxBy`, `min`,
 `minBy`, `permute`, `reduce`, `reduceBack`, `removeAt`, `removeManyAt`, `skip`, `splitAt`, `splitInto`, `tail`,
-`take`, `transpose`, `updateAt`, `windowed`. None of those throw an exception in the `Queue` implementation!
+`take`, `transpose`, `updateAt`, `windowed`.
+
+None of those throw an exception in the `Queue` implementation!
 
 On top, there are additional functions you don't find in other modules. To name the most important.
 
 * `Queue.map3`, `Queue.map4`
 * `Queue.lift2`, `Queue.lift3`, `Queue.lift4`
 * `Queue.fold3`, `Queue.fold4`, `Queue.foldi`, `Queue.foldi2`, `Queue.foldi3`, `Queue.foldi4`
+* `Queue.choosei`
 * `Queue.mapFold` (it works different to `List.mapFold`)
 * `Queue.mapReduce`
 * `Queue.mapFilter`
@@ -78,6 +81,7 @@ On top, there are additional functions you don't find in other modules. To name 
 * `Queue.findRemove`
 * `Queue.intersperse`
 * `Queue.permutations`
+* `Queue.partitionMap`
 * `Queue.itemMany`
 
 Because of the implementation of the Queue some operations have a better performance.

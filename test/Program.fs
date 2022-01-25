@@ -1414,6 +1414,23 @@ Test.equal (Queue.itemMany [9]           (Queue.range 1 10)) (Queue [10])    "it
 Test.equal (Queue.itemMany [0;9]         (Queue.range 1 10)) (Queue [1;10])  "itemMany 5"
 Test.equal (Queue.itemMany [7;5;2]       (Queue.range 1 10)) (Queue [8;6;3]) "itemMany 6"
 
+Test.equal
+    (Queue.choosei (fun i x -> if isEven i && String.length x > 0 then ValueSome (i,x) else ValueNone)
+        //      0    1  2   3       4       5      6     7
+        (Queue ["Hi";"";"";"There";"Whuba";"Luba";"Dub";"Dub"]))
+    (Queue [(0,"Hi"); (4,"Whuba"); (6,"Dub")])
+    "choosei"
+
+Test.equal
+    (Queue.partitionMap
+        (fun x ->
+            if   x % 3 = 0 && x % 5 = 0 then Choice2Of2 "FizzBuzz"
+            elif x % 3 = 0              then Choice2Of2 "Fizz"
+            elif x % 5 = 0              then Choice2Of2 "Buzz"
+            else Choice1Of2 (string x)) (Queue.range 1 15))
+    (Queue ["1";"2";"4";"7";"8";"11";"13";"14"], Queue ["Fizz";"Buzz";"Fizz";"Fizz";"Buzz";"Fizz";"FizzBuzz"])
+    "partitionMap"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
