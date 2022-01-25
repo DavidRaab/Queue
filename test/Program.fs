@@ -1407,10 +1407,12 @@ let toQueuefromMap =
     Test.equal (Queue.find (search  2) q) (ValueSome (kv  2 "Trouble")) "Queue from Map 2"
     Test.equal (Queue.find (search 10) q) (ValueSome (kv 10 "Rumble"))  "Queue from Map 3"
 
-Test.equal
-    (Queue.itemMany [-1;0;3;5;50] (Queue.range 1 10))
-    (Queue [1;4;6])
-    "itemMany"
+Test.equal (Queue.itemMany [-1;0;3;5;50] (Queue.range 1 10)) (Queue [1;4;6]) "itemMany 1"
+Test.equal (Queue.itemMany []            (Queue.range 1 10)) (Queue.empty)   "itemMany 2"
+Test.equal (Queue.itemMany [20]          (Queue.range 1 10)) (Queue.empty)   "itemMany 3"
+Test.equal (Queue.itemMany [9]           (Queue.range 1 10)) (Queue [10])    "itemMany 4"
+Test.equal (Queue.itemMany [0;9]         (Queue.range 1 10)) (Queue [1;10])  "itemMany 5"
+Test.equal (Queue.itemMany [7;5;2]       (Queue.range 1 10)) (Queue [8;6;3]) "itemMany 6"
 
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()

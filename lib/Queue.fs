@@ -520,12 +520,27 @@ module Queue =
         loop 0 queue
 
     let itemMany idxs queue =
-        let mutable result = empty
-        for idx in idxs do
-            match item idx queue with
-            | ValueSome x -> result <- add x result
-            | ValueNone   -> ()
-        result
+        let idxs   = Array.ofSeq (Seq.filter (fun i -> if i >= 0 && i < length queue then true else false) idxs)
+        let result = Array.zeroCreate (Array.length idxs)
+
+        let rec loop idx next nextIdx queue =
+            match head queue with
+            | ValueSome (x,queue) ->
+                if idx = next then
+                    let ridx = Array.findIndex (fun x -> x = next) idxs
+                    result.[ridx] <- x
+                    match nextIdx with
+                    | []            -> ()
+                    | next::nextIdx -> loop (idx+1) next nextIdx queue
+                else
+                    loop (idx+1) next nextIdx queue
+            | ValueNone -> ()
+
+        match List.ofArray (Array.sort idxs) with
+        | []            -> empty
+        | next::nextIdx ->
+            loop 0 next nextIdx queue
+            Queue result
 
     let indexed queue =
         mapi (fun i x -> (i,x)) queue
