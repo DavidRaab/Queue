@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
+    <Configuration>Release</Configuration>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
