@@ -16,7 +16,7 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(queue,added,len
     member _.Added  : list<'a> = added
     member _.Length : int      = length
 
-    member _.Head () : voption<'a * Queue<'a>> =
+    member _.Head () : voption<struct('a * Queue<'a>)> =
         if length > 1 then
             match queue,added with
                 | x::xs, a -> ValueSome (x, Queue(xs,a,(length-1)))
@@ -75,7 +75,7 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(queue,added,len
             this.getEnumerator ()
 
         override this.GetEnumerator(): System.Collections.IEnumerator =
-            this.getEnumerator ()
+            this.getEnumerator () :> System.Collections.IEnumerator
 
     interface System.IComparable with
         override this.CompareTo(other:obj) =
@@ -95,13 +95,22 @@ type Queue<[<EqualityConditionalOn; ComparisonConditionalOn>]'a>(queue,added,len
 
 module Queue =
     // Creation of Queue
-    let empty<'a> : Queue<'a> = Queue.Empty
+    let inline empty<'a> : Queue<'a> = Queue.Empty
 
-    let add x (queue: Queue<'a>) =
+    let inline add x (queue: Queue<'a>) =
         queue.Add x
 
     let addMany (xs: seq<'a>) (queue: Queue<'a>) =
-        Seq.fold (fun q x -> add x q) queue xs
+        match xs with
+        | :? list<'a>  as xs -> List.fold  (fun q x -> add x q) queue xs
+        | :? array<'a> as xs -> Array.fold (fun q x -> add x q) queue xs
+        | :? Queue<'a> as xs ->
+            let rec loop (queue:Queue<'a>) state =
+                match queue.Head() with
+                | ValueSome (x,queue) -> loop queue (add x state)
+                | ValueNone           -> state
+            loop xs queue
+        | xs -> Seq.fold (fun q x -> add x q) queue xs
 
     let prepend (x: 'a) (queue: Queue<'a>) =
         Queue(x :: queue.Queue, queue.Added, queue.Length + 1)
@@ -112,7 +121,7 @@ module Queue =
     let one (x: 'a) : Queue<'a> =
         Queue ([],[x],1)
 
-    let unfold generator (state:'State) =
+    let inline unfold ([<InlineIfLambda>] generator) (state:'State) =
         let rec loop q state =
             match generator state with
             | ValueSome (x,state) -> loop (add x q) state
@@ -160,7 +169,7 @@ module Queue =
         else
             empty
 
-    let init length generator =
+    let inline init length ([<InlineIfLambda>] generator) =
         let gen idx =
             if   idx < length
             then ValueSome (generator idx, idx+1)
@@ -170,16 +179,16 @@ module Queue =
         else empty
 
     // Low-Level & Basic Implementations
-    let isEmpty (queue:Queue<'a>) =
+    let inline isEmpty (queue:Queue<'a>) =
         queue.Length = 0
 
-    let length (q:Queue<'a>) =
+    let inline length (q:Queue<'a>) =
         q.Length
 
-    let head (q:Queue<'a>) =
+    let inline head (q:Queue<'a>) =
         q.Head()
 
-    let equal (q1:Queue<'a>) (q2:Queue<'a>) =
+    let inline equal (q1:Queue<'a>) (q2:Queue<'a>) =
         q1.Equals(q2)
 
     let rev (queue : Queue<'a>)=
@@ -190,7 +199,7 @@ module Queue =
         | ValueSome (h,t) -> t
         | ValueNone       -> Queue([],[],0)
 
-    let fold f (state:'State) (queue : Queue<'a>) =
+    let inline fold ([<InlineIfLambda>] f) (state:'State) (queue : Queue<'a>) =
         let rec loop first remaining state =
             match first with
             | x::xs -> loop xs remaining (f state x)
@@ -230,7 +239,7 @@ module Queue =
             ) state queue
         add finalState states
 
-    let foldBack f queue (state:'State) =
+    let inline foldBack ([<InlineIfLambda>] f) queue (state:'State) =
         let rec loop queue state =
             match head queue with
             | ValueSome (x,queue) -> loop queue (f x state)
@@ -264,6 +273,11 @@ module Queue =
             | ValueSome _     , ValueNone        -> state
         loop fq xq empty
 
+    let append (queue1:Queue<'a>) (queue2:Queue<'a>) =
+        if   queue1.Length < queue2.Length
+        then prependMany (rev queue1) queue2
+        else addMany      queue2      queue1
+
     let bind (f : 'a -> Queue<'b>) queue =
         fold (fun state x -> addMany (f x) state) empty queue
 
@@ -272,17 +286,19 @@ module Queue =
 
 
     // Side-Effects
-    let rec iter f queue =
-        match head queue with
-        | ValueSome (h,t) -> f h; iter f t
-        | ValueNone       -> ()
+    let inline iter ([<InlineIfLambda>] f) queue =
+        let rec loop queue =
+            match head queue with
+            | ValueSome (h,queue) -> f h; loop queue
+            | ValueNone           -> ()
+        loop queue
 
     let rec iter2 f queue1 queue2 =
         match head queue1, head queue2 with
         | ValueSome (x1,q1), ValueSome(x2,q2) -> f x1 x2; iter2 f q1 q2
         | _                                   -> ()
 
-    let iteri f queue =
+    let inline iteri ([<InlineIfLambda>] f) queue =
         let rec loop idx queue =
             match head queue with
             | ValueSome (x,t) -> f idx x; loop (idx+1) t
@@ -300,13 +316,8 @@ module Queue =
 
 
     // Utilities
-    let lastIndex queue =
+    let inline lastIndex queue =
         length queue - 1
-
-    let append (queue1:Queue<'a>) (queue2:Queue<'a>) =
-        if   queue1.Length < queue2.Length
-        then prependMany (rev queue1) queue2
-        else addMany      queue2      queue1
 
     let last (queue : Queue<'a>) =
         match queue.Queue, queue.Added with
@@ -473,20 +484,26 @@ module Queue =
             one (f x)))
 
     let partition predicate queue =
-        fold (fun (ts,fs) x ->
+        let mutable ts = empty
+        let mutable fs = empty
+        queue |> iter (fun x ->
             if   predicate x
-            then add x ts,       fs
-            else       ts, add x fs
-        ) (empty,empty) queue
+            then ts <- add x ts
+            else fs <- add x fs
+        )
+        (ts,fs)
 
     let partitionMap mapper queue =
-        fold (fun (ls,rs) x ->
+        let mutable ls = empty
+        let mutable rs = empty
+        queue |> iter (fun x ->
             match mapper x with
-            | Choice1Of2 x -> (add x ls, rs)
-            | Choice2Of2 x -> (ls, add x rs)
-        ) (empty,empty) queue
+            | Choice1Of2 x -> ls <- add x ls
+            | Choice2Of2 x -> rs <- add x rs
+        )
+        (ls,rs)
 
-    let compare (queue1:Queue<'a>) (queue2:Queue<'a>) =
+    let inline compare (queue1:Queue<'a>) (queue2:Queue<'a>) =
         LanguagePrimitives.GenericComparison queue1 queue2
 
     let compareWith comparer queue1 queue2 =
@@ -553,9 +570,7 @@ module Queue =
         mapi (fun i x -> (i,x)) queue
 
     let filter predicate q =
-        let folder q x =
-            if predicate x then add x q else q
-        fold folder empty q
+        fold (fun q x -> if predicate x then add x q else q) empty q
 
     let choose f queue =
         let folder q x =
@@ -759,14 +774,14 @@ module Queue =
             add x q1, add y q2, add z q3, add w q4) (empty,empty,empty,empty) queue
 
     let reduce reducer queue =
-        let folder state x =
-            reducer state x
-        ValueOption.map (fun (x,t) -> fold folder x t) (head queue)
+        match head queue with
+        | ValueSome (state,queue) -> ValueSome (fold (fun state x -> reducer state x) state queue)
+        | ValueNone               -> ValueNone
 
     let reduceBack reducer queue =
-        let folder state x =
-            reducer x state
-        ValueOption.map (fun (x,t) -> fold folder x t) (head (rev queue))
+        match head (rev queue) with
+        | ValueSome (state,queue) -> ValueSome (fold (fun state x -> reducer x state) state queue)
+        | ValueNone               -> ValueNone
 
     let inline sum queue =
         let folder acc x =
@@ -853,7 +868,7 @@ module Queue =
 
     let exactlyOne queue =
         if   length queue = 1
-        then ValueOption.map fst (head queue)
+        then ValueOption.map (fun (struct (x,_)) -> x) (head queue)
         else ValueNone
 
     let find predicate queue =
@@ -1051,11 +1066,11 @@ module Queue =
             loop empty queue
 
     // Mappings
-    let replicate = repeat
-    let collect   = bind
-    let exists    = any
-    let exists2   = any2
-    let singleton = one
+    let inline replicate count     x             = repeat count x
+    let inline collect   f         queue         = bind f queue
+    let inline exists    predicate queue         = any predicate queue
+    let inline exists2   predicate queue1 queue2 = any2 predicate queue1 queue2
+    let inline singleton x                       = one x
 
     // Converter
     let ofArray array : Queue<'a> =
@@ -1081,7 +1096,7 @@ module Queue =
         | :? Set<'a>   as xs -> ofSet xs
         | _                  -> Seq.fold (fun q x -> q.Add x) Queue.Empty seq
 
-    let toSeq (queue: Queue<'a>) =
+    let inline toSeq (queue: Queue<'a>) =
         queue :> seq<'a>
 
     let toArray queue =
@@ -1092,7 +1107,7 @@ module Queue =
         array
 
     let toList queue =
-        foldBack (fun x xs -> x :: xs) queue []
+        foldBack (fun x l -> x :: l) queue []
 
     let toSet (queue:Queue<'a>) =
         Set queue.Added + Set queue.Queue
@@ -1146,5 +1161,5 @@ type Queue<'a> with
             (defaultArg start 0)
             (defaultArg stop (Queue.lastIndex this))
             this
-    static member (++) (q1:Queue<'a>,q2:Queue<'a>) : Queue<'a> =
+    static member inline (++) (q1:Queue<'a>,q2:Queue<'a>) : Queue<'a> =
         Queue.append q1 q2

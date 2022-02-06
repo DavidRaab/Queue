@@ -96,8 +96,8 @@ Test.notEqual [1..10] [for x in Queue.range 1 5 -> x] "Test notEqual for Express
 let q1to6 = Queue.range 1 6
 Test.ok    (Queue.contains  1 q1to6)   "Queue Contains 1"
 Test.notOk (Queue.contains 10 q1to6)   "Queue not Contains 10"
-Test.equal (Queue.map double q1to6)    (Queue [2;4;6;8;10;12]) "Queue.map"
-Test.equal (Queue.filter isEven q1to6) (Queue [2;4;6])         "Queue.filter"
+Test.equal (Queue.map double q1to6)    (Queue [2;4;6;8;10;12]) "map"
+Test.equal (Queue.filter isEven q1to6) (Queue [2;4;6])         "filter"
 
 let intern =
     Queue.ofList [1;2;3]
