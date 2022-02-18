@@ -1431,6 +1431,19 @@ Test.equal
     (Queue ["1";"2";"4";"7";"8";"11";"13";"14"], Queue ["Fizz";"Buzz";"Fizz";"Fizz";"Buzz";"Fizz";"FizzBuzz"])
     "partitionMap"
 
+Test.equal
+    (Queue.toList2 (Queue [Queue.range 1 5; Queue.range 1 3; Queue.range 6 10]))
+    ([[1..5]; [1..3]; [6..10]])
+    "toList2"
+
+Test.equal
+    (Queue.ofList2 [[1..5]; [1..3]; [6..10]])
+    (Queue.empty
+        |> Queue.add (Queue.range 1 5)
+        |> Queue.add (Queue.range 1 3)
+        |> Queue.add (Queue.range 6 10))
+    "ofList2"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore

@@ -1079,6 +1079,11 @@ module Queue =
     let ofList list : Queue<'a> =
         Queue(list, [], List.length list)
 
+    let ofList2 (xss : list<list<'a>>) =
+        List.fold (fun state xs ->
+            add (Queue xs) state
+        ) empty xss
+
     let ofSet set : Queue<'a> =
         Queue([], Set.toList set, Set.count set)
 
@@ -1108,6 +1113,11 @@ module Queue =
 
     let toList queue =
         foldBack (fun x l -> x :: l) queue []
+
+    let toList2 (queue:Queue<Queue<'a>>) =
+        foldBack (fun q state ->
+            toList q :: state
+        ) queue []
 
     let toSet (queue:Queue<'a>) =
         Set queue.Added + Set queue.Queue
