@@ -1136,6 +1136,20 @@ module Queue =
     let toMapGroupBy (projection: 'a -> 'Key) queue =
         toMapWithFold projection (fun queue x -> add x queue) empty queue
 
+    let swapMany swappings queue =
+        let length = length queue
+        let array  = toArray queue
+        swappings |> Seq.iter (fun (src,dst) ->
+            if src >= 0 && src < length && dst >= 0 && dst < length then
+                let tmp = array.[dst]
+                array.[dst] <- array.[src]
+                array.[src] <- tmp
+        )
+        Queue array
+
+    let swap sourceIndex targetIndex queue =
+        swapMany [|sourceIndex,targetIndex|] queue
+
     // Sorting
     let sort queue =
         let a = toArray queue

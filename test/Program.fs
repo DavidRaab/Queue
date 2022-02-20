@@ -1444,6 +1444,27 @@ Test.equal
         |> Queue.add (Queue.range 6 10))
     "ofList2"
 
+Test.equal (Queue.swap   0  3 (Queue.range 1 10)) (Queue [4;2;3;1;5;6;7;8;9;10]) "swap 1"
+Test.equal (Queue.swap  -1  3 (Queue.range 1 10)) (Queue.range 1 10)             "swap 2"
+Test.equal (Queue.swap   0 -1 (Queue.range 1 10)) (Queue.range 1 10)             "swap 3"
+Test.equal (Queue.swap  20  0 (Queue.range 1 10)) (Queue.range 1 10)             "swap 4"
+Test.equal (Queue.swap   0 20 (Queue.range 1 10)) (Queue.range 1 10)             "swap 5"
+Test.equal
+    (Queue.swap 1 8 (Queue.swap 0 9 (Queue.range 1 10)))
+    (Queue [10;9;3;4;5;6;7;8;2;1])
+    "swap 6"
+
+let q10 = Queue.range 1 10
+Test.equal (Queue.swapMany [ 0, 3] q10) (Queue.swap  0  3 q10) "swapMany 1"
+Test.equal (Queue.swapMany [-1, 3] q10) (Queue.swap -1  3 q10) "swapMany 2"
+Test.equal (Queue.swapMany [ 0,-1] q10) (Queue.swap  0 -1 q10) "swapMany 3"
+Test.equal (Queue.swapMany [20, 0] q10) (Queue.swap 20  0 q10) "swapMany 4"
+Test.equal (Queue.swapMany [ 0,20] q10) (Queue.swap  0 20 q10) "swapMany 5"
+Test.equal
+    (Queue.swap 1 8 (Queue.swap 0 9 (Queue.range 1 10)))
+    (Queue.swapMany [0,9; 1,8] (Queue.range 1 10))
+    "swapMany 6"
+
 // Run Tests
 let args = Array.skip 1 <| System.Environment.GetCommandLineArgs()
 runTestsWithCLIArgs [] args (testList "Main" (List.ofSeq tests)) |> ignore
